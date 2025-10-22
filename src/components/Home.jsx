@@ -50,7 +50,7 @@ const Home = () => {
 
     try {
       await axios.post(
-        "/api/posts",
+        "/api/expenses/add",
         {
           username: userDetails?.username,
           amount: Number(newExpense.amount),
