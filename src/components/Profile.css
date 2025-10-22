@@ -1,0 +1,52 @@
+.profile-container {
+  max-width: 600px;
+  margin: 3rem auto;
+  padding: 2rem;
+  background: #fdfdfd;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.profile-container h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #333;
+}
+
+.profile-card {
+  background: #fafafa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.profile-card p {
+  font-size: 1rem;
+  margin: 0.5rem 0;
+}
+
+.logout-btn {
+  margin-top: 1.5rem;
+  display: block;
+  width: 100%;
+  background-color: #007bff;
+  color: white;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.logout-btn:hover {
+  background-color: #0056b3;
+}
+
+.error {
+  color: #c00;
+  text-align: center;
+  font-weight: bold;
+}
