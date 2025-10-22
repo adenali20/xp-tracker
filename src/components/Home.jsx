@@ -69,7 +69,11 @@ const Home = () => {
   };
 
   if (loading) {
-    return <div className="home-container"><p>Loading dashboard...</p></div>;
+    return (
+      <div className="home-container">
+        <p>Loading dashboard...</p>
+      </div>
+    );
   }
 
   return (
@@ -162,6 +166,14 @@ const Home = () => {
       {showAllModal && (
         <div className="modal-overlay" onClick={() => setShowAllModal(false)}>
           <div className="modal-content large" onClick={(e) => e.stopPropagation()}>
+            {/* ✅ Replaced bottom close button with top-right × */}
+            <button
+              className="close-btn"
+              onClick={() => setShowAllModal(false)}
+              aria-label="Close"
+            >
+              &times;
+            </button>
             <h2>All Expenses</h2>
             <div className="all-list">
               {allExpenses.map((item) => (
@@ -174,15 +186,6 @@ const Home = () => {
                   </span>
                 </div>
               ))}
-            </div>
-            <div className="modal-actions">
-              <button
-                type="button"
-                onClick={() => setShowAllModal(false)}
-                className="btn secondary"
-              >
-                Close
-              </button>
             </div>
           </div>
         </div>

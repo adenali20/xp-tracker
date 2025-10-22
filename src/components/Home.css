@@ -124,6 +124,7 @@ h1 {
 }
 
 .modal-content {
+  position: relative; /* ✅ Add this line */
   background: white;
   padding: 2rem;
   border-radius: 12px;
@@ -211,4 +212,18 @@ h1 {
   padding: 0.75rem;
   border-bottom: 1px solid #eee;
 }
+.close-btn {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-size: 1.5rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.2s ease;
+}
 
+.close-btn:hover {
+  color: #000;
+}
