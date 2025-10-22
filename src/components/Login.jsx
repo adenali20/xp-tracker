@@ -20,7 +20,7 @@ const Login = () => {
     dispatch(loginStart());
 
     try {
-      const response = await axios.post(
+       await axios.post(
         '/api/auth/login',
         new URLSearchParams({
           username: credentials.username,

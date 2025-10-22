@@ -1,4 +1,3 @@
-import React from 'react';
 import './Profile.css';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/reducers/userSlice';

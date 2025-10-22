@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import "./SignupPage.css";
 import axios from '../api/axios';
-import { useNavigate, Link } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 const SignupPage = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -12,7 +11,6 @@ const SignupPage = () => {
   });
 
   const [message, setMessage] = useState("");
-  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -34,7 +32,7 @@ const SignupPage = () => {
     }
 
      try {
-      const response = await axios.post(
+      await axios.post(
         '/api/user/register',
         {
           username: formData.name.split("@")[0],
