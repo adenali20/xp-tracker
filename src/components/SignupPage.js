@@ -46,7 +46,7 @@ const SignupPage = () => {
       );
 
     //   const userDetails = { username: formData.name };
-      navigate('/login');
+      navigate('/xt/login');
     } catch (error) {
         setMessage("Signup failed.");
         console.log('Signup failed', error);
@@ -117,7 +117,7 @@ const SignupPage = () => {
         {message && <p className="message">{message}</p>}
 
         <p className="login-link">
-          Already have an account? <a href="/login">Log In</a>
+          Already have an account? <a href="/xt/login">Log In</a>
         </p>
       </form>
     </div>
