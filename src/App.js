@@ -12,18 +12,20 @@ const App = () => {
     <Router>
       <Routes>
         {/* Public route */}
-        <Route path="/expense-tracker/login" element={<Login />} />
-        <Route path="/expense-tracker/register" element={<SignupPage />} />
+        <Route path="/xt/login" element={<Login />} />
+        <Route path="/xt/register" element={<SignupPage />} />
         <Route path="/" element={<SoftwareEngineerProfile />} />
 
         {/* Private routes */}
         <Route element={<PrivateRoute />}>
           <Route element={<Layout />}>
-            <Route path="/expense-tracker" element={<Home />} />
-            <Route path="/expense-tracker/profile" element={<Profile />} />
+            <Route path="/xt" element={<Home />} />
+            <Route path="/xt/profile" element={<Profile />} />
 
           </Route>
         </Route>
+        {/* Catch-all: redirect unknown routes to login */}
+        {/* <Route path="*" element={<Navigate to="/" />} /> */}
       </Routes>
     </Router>
   );

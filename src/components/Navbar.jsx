@@ -7,12 +7,12 @@ const Navbar = () => {
       <div className="navbar-logo">XP-Tracker</div>
       <ul className="navbar-links">
         <li>
-          <NavLink to="/expense-tracker" className={({ isActive }) => isActive ? 'active' : ''}>
+          <NavLink to="/xt" className={({ isActive }) => isActive ? 'active' : ''}>
             Home
           </NavLink>
         </li>
         <li>
-          <NavLink to="/expense-tracker/profile" className={({ isActive }) => isActive ? 'active' : ''}>
+          <NavLink to="/xt/profile" className={({ isActive }) => isActive ? 'active' : ''}>
             Profile
           </NavLink>
         </li>
