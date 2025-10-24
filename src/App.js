@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route} from 'react-router-dom';
 import Login from './components/Login';
 import Home from './components/Home';
 import Profile from './components/Profile';
@@ -12,15 +12,14 @@ const App = () => {
     <Router>
       <Routes>
         {/* Public route */}
-        <Route path="/xt/login" element={<Login />} />
-        <Route path="/xt/register" element={<SignupPage />} />
-        <Route path="/" element={<SoftwareEngineerProfile />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<SignupPage />} />
 
         {/* Private routes */}
         <Route element={<PrivateRoute />}>
           <Route element={<Layout />}>
-            <Route path="/xt" element={<Home />} />
-            <Route path="/xt/profile" element={<Profile />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/profile" element={<Profile />} />
 
           </Route>
         </Route>
