@@ -5,7 +5,6 @@ import Profile from './components/Profile';
 import PrivateRoute from './routes/PrivateRoute';
 import SignupPage from './components/SignupPage';
 import Layout from './components/Layout'; // Import the layout
-import SoftwareEngineerProfile from './components/SoftwareEngineerProfile'; // Import the software engineer profile component
 
 const App = () => {
   return (
