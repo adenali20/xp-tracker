@@ -34,7 +34,7 @@ const Login = () => {
 
       const userDetails = { username: credentials.username };
       dispatch(loginSuccess(userDetails));
-      navigate('/xt');
+      navigate('/');
     } catch (error) {
       dispatch(loginFailure(error.response?.data?.message || 'Login failed'));
       console.log('Login failed', error);
@@ -72,7 +72,7 @@ const Login = () => {
         {error && <p className="error">{error}</p>}
 
         <p className="signup-text">
-          Don’t have an account? <Link to="/xt/register">Create one</Link>
+          Don’t have an account? <Link to="/register">Create one</Link>
         </p>
       </form>
     </div>
