@@ -16,7 +16,7 @@ const Profile = () => {
       console.error('Logout request failed (still logging out locally).', err);
     } finally {
       dispatch(logout());
-      navigate('/login');
+      navigate('/expense-tracker/login');
     }
   };
 

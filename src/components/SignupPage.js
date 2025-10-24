@@ -46,7 +46,7 @@ const SignupPage = () => {
       );
 
     //   const userDetails = { username: formData.name };
-      navigate('/login');
+      navigate('/expense-tracker/login');
     } catch (error) {
         setMessage("Signup failed.");
         console.log('Signup failed', error);

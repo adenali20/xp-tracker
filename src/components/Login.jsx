@@ -34,7 +34,7 @@ const Login = () => {
 
       const userDetails = { username: credentials.username };
       dispatch(loginSuccess(userDetails));
-      navigate('/');
+      navigate('/expense-tracker');
     } catch (error) {
       dispatch(loginFailure(error.response?.data?.message || 'Login failed'));
       console.log('Login failed', error);
