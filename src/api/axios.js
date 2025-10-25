@@ -1,19 +1,19 @@
 import axios from 'axios';
 
+const origin = window.location.origin; // e.g. "http://localhost:3000" or "https://dev.xptracker.com"
+const url = new URL(origin);
 
-const origin = window.location.origin; // e.g., "http://localhost:3000" or "http://dev.xptracker.com"
-  const url = new URL(origin);
+// Check if it's localhost
+const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
 
-  // Check if it's localhost
-  const isLocalhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+// For localhost, replace the port with 8050.
+// For deployed (non-local) environments, just use the same origin.
+const base = isLocalhost
+  ? `${url.protocol}//${url.hostname}:8050`
+  : `${url.protocol}//${url.hostname}`;
 
-  // If localhost, drop the port (3000) and use just the protocol + hostname
-  const base = isLocalhost
-  ? `${url.protocol}//${url.hostname}`
-  : origin;
-  const BASE_URL = `${base}:8050`;
 const axiosInstance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: base,
   withCredentials: true, // Important for session cookie
 });
 
