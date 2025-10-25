@@ -83,7 +83,7 @@ const Home = () => {
 
       <div className="dashboard-cards">
         <div className="card total-card">
-          <h3>Total Balance</h3>
+          <h3>Total Expense</h3>
           <p className={`amount ${summary.total >= 0 ? "positive" : "negative"}`}>
             ${summary.total.toFixed(2)}
           </p>
