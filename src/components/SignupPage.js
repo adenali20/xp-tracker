@@ -33,7 +33,7 @@ const SignupPage = () => {
 
      try {
       await axios.post(
-        '/api/user/register',
+        '/user/register',
         {
           username: formData.name.split("@")[0],
           email: formData.email,

@@ -16,7 +16,7 @@ const Home = () => {
 
   const fetchSummary = async () => {
     try {
-      const res = await axios.get("/api/expenses", { withCredentials: true });
+      const res = await axios.get("/expenses", { withCredentials: true });
       const data = res.data;
 
       const total = data.reduce((acc, item) => acc + Number(item.amount || 0), 0);
@@ -50,7 +50,7 @@ const Home = () => {
 
     try {
       await axios.post(
-        "/api/expenses/add",
+        "/expenses/add",
         {
           username: userDetails?.username,
           amount: Number(newExpense.amount),
