@@ -10,7 +10,7 @@ const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1'
 // For deployed (non-local) environments, just use the same origin.
 const base = isLocalhost
   ? `${url.protocol}//${url.hostname}:8050`
-  : `${url.protocol}//${url.hostname}`;
+  : `${url.protocol}//${url.hostname}/expense-service`;
 
 const axiosInstance = axios.create({
   baseURL: base,
