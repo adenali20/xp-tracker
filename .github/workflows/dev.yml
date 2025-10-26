@@ -53,7 +53,7 @@ jobs:
       - name: Update image tag in GitOps repo
         run: |
           cd gitops/environments/dev/expense-tracker-web
-          sed -i "s|adenli/xp-tracker:.*|adenli/xp-tracker:${IMAGE_TAG}|" deployment.yaml
+          sed -i "s|adenli/xp-tracker:.*|adenli/xp-tracker:${IMAGE_TAG}|" deployment-service.yml
 
       # 8️⃣ Commit and push the change
       - name: Commit and push changes
