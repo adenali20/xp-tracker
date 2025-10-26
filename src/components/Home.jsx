@@ -89,13 +89,13 @@ const Home = () => {
           </p>
         </div>
         <div className="card count-card">
-          <h3>Total Expenses</h3>
+          <h3>Total Entries</h3>
           <p className="count">{summary.count}</p>
         </div>
       </div>
 
       <div className="recent-header">
-        <h2>Recent Entries</h2>
+        <h2>History</h2>
         <button className="btn link-btn" onClick={() => setShowAllModal(true)}>
           View All →
         </button>
