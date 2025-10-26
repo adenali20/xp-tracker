@@ -89,7 +89,7 @@ const Home = () => {
           </p>
         </div>
         <div className="card count-card">
-          <h3>Total Entries</h3>
+          <h3>Total Expenses</h3>
           <p className="count">{summary.count}</p>
         </div>
       </div>
