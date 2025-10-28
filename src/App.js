@@ -5,6 +5,7 @@ import Profile from './components/Profile';
 import PrivateRoute from './routes/PrivateRoute';
 import SignupPage from './components/SignupPage';
 import Layout from './components/Layout'; // Import the layout
+import Friends from './components/Friends';
 
 const App = () => {
   return (
@@ -13,6 +14,7 @@ const App = () => {
         {/* Public route */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<SignupPage />} />
+        <Route path="/friends" element={<Friends />} />
 
         {/* Private routes */}
         <Route element={<PrivateRoute />}>
