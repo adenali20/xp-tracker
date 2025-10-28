@@ -97,7 +97,7 @@ const Home = () => {
       <div className="recent-header">
         <h2>History</h2>
         <button className="btn link-btn" onClick={() => setShowAllModal(true)}>
-          View All →
+          View All
         </button>
       </div>
 
