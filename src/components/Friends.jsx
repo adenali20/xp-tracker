@@ -1,11 +1,13 @@
 import { useState } from "react";
+import { Circle, Video, Phone } from "lucide-react"; // ✅ Added Video & Phone icons
 import "./Friends.css";
 
 const Friends = () => {
   const [friends] = useState([
-    { id: 1, name: "John Doe", lastMessage: "Hey there!" },
-    { id: 2, name: "Sarah Lee", lastMessage: "Let’s catch up soon." },
-    { id: 3, name: "Alex Kim", lastMessage: "How’s it going?" },
+    { id: 1, name: "John Doe", lastMessage: "Hey there!", online: true, lastSeen: null },
+    { id: 2, name: "Sarah Lee", lastMessage: "Let’s catch up soon.", online: false, lastSeen: "10 min ago" },
+    { id: 3, name: "Alex Kim", lastMessage: "How’s it going?", online: false, lastSeen: "2 hours ago" },
+    { id: 4, name: "Nina Patel", lastMessage: "Ping me later.", online: true, lastSeen: null },
   ]);
 
   const [selectedFriend, setSelectedFriend] = useState(null);
@@ -14,7 +16,6 @@ const Friends = () => {
 
   const handleSelectFriend = (friend) => {
     setSelectedFriend(friend);
-    // Fetch chat history here (for now, mock data)
     setMessages([
       { sender: "me", text: "Hi " + friend.name + "!" },
       { sender: friend.name, text: friend.lastMessage },
@@ -30,9 +31,17 @@ const Friends = () => {
     setNewMessage("");
   };
 
+  const handleVideoCall = () => {
+    alert(`🎥 Starting video call with ${selectedFriend.name}...`);
+  };
+
+  const handleVoiceCall = () => {
+    alert(`📞 Starting voice call with ${selectedFriend.name}...`);
+  };
+
   return (
     <div className="friends-container">
-      {/* Left Sidebar */}
+      {/* Sidebar */}
       <div className="friends-list">
         <h2>Friends</h2>
         <ul>
@@ -42,19 +51,63 @@ const Friends = () => {
               className={selectedFriend?.id === friend.id ? "active" : ""}
               onClick={() => handleSelectFriend(friend)}
             >
-              <span className="friend-name">{friend.name}</span>
-              <p className="last-message">{friend.lastMessage}</p>
+              <div className="friend-info">
+                <div className="status-icon">
+                  <Circle
+                    size={12}
+                    fill={friend.online ? "green" : "gray"}
+                    stroke={friend.online ? "green" : "gray"}
+                  />
+                </div>
+                <div className="friend-details">
+                  <span className="friend-name">{friend.name}</span>
+                  <p className="last-message">{friend.lastMessage}</p>
+                </div>
+              </div>
+              <span className="last-seen">
+                {friend.online ? "Online" : `Last seen ${friend.lastSeen}`}
+              </span>
             </li>
           ))}
         </ul>
       </div>
 
-      {/* Right Chat Panel */}
+      {/* Chat Panel */}
       <div className="chat-panel">
         {selectedFriend ? (
           <>
             <div className="chat-header">
-              <h3>{selectedFriend.name}</h3>
+              <div className="chat-friend-info">
+                <Circle
+                  size={10}
+                  fill={selectedFriend.online ? "green" : "gray"}
+                  stroke={selectedFriend.online ? "green" : "gray"}
+                />
+                <h3>{selectedFriend.name}</h3>
+                <span className="chat-status">
+                  {selectedFriend.online
+                    ? "Online"
+                    : `Last seen ${selectedFriend.lastSeen}`}
+                </span>
+              </div>
+
+              {/* ✅ Call Icons */}
+              <div className="chat-actions">
+                <button
+                  className="icon-btn"
+                  title="Start voice call"
+                  onClick={handleVoiceCall}
+                >
+                  <Phone size={20} />
+                </button>
+                <button
+                  className="icon-btn"
+                  title="Start video call"
+                  onClick={handleVideoCall}
+                >
+                  <Video size={20} />
+                </button>
+              </div>
             </div>
 
             <div className="chat-messages">
