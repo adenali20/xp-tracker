@@ -1,192 +1,146 @@
 import { useState } from "react";
-import { Circle, Video, Phone, ArrowLeft, Search } from "lucide-react";
+import EmojiPicker from "emoji-picker-react";
+import { Video, Phone, Smile, ArrowLeft, CircleDot, Circle } from "lucide-react";
 import "./Friends.css";
 
 const Friends = () => {
-  const [friends] = useState([
-  { id: 1, name: "John Doe", lastMessage: "Hey there!", online: true, lastSeen: null },
-  { id: 2, name: "Sarah Lee", lastMessage: "Let’s catch up soon.", online: false, lastSeen: "10 min ago" },
-  { id: 3, name: "Alex Kim", lastMessage: "How’s it going?", online: false, lastSeen: "2 hours ago" },
-  { id: 4, name: "Nina Patel", lastMessage: "Ping me later.", online: true, lastSeen: null },
-  { id: 5, name: "Mike Johnson", lastMessage: "See you soon!", online: false, lastSeen: "5 min ago" },
-  { id: 6, name: "Emma Watson", lastMessage: "Thanks!", online: true, lastSeen: null },
-  { id: 7, name: "David Brown", lastMessage: "On my way.", online: false, lastSeen: "1 hour ago" },
-  { id: 8, name: "Sophia Lee", lastMessage: "Got it.", online: true, lastSeen: null },
-  { id: 9, name: "James Smith", lastMessage: "Cool!", online: false, lastSeen: "30 min ago" },
-  { id: 10, name: "Olivia Davis", lastMessage: "See you tomorrow.", online: true, lastSeen: null },
-  { id: 11, name: "Liam Wilson", lastMessage: "No problem.", online: false, lastSeen: "3 hours ago" },
-  { id: 12, name: "Ava Martinez", lastMessage: "Happy Birthday!", online: true, lastSeen: null },
-  { id: 13, name: "Ethan Anderson", lastMessage: "Thanks for the help.", online: false, lastSeen: "45 min ago" },
-  { id: 14, name: "Mia Thomas", lastMessage: "See you later.", online: true, lastSeen: null },
-  { id: 15, name: "Noah Jackson", lastMessage: "Okay.", online: false, lastSeen: "20 min ago" },
-  { id: 16, name: "Isabella White", lastMessage: "Got it!", online: true, lastSeen: null },
-  { id: 17, name: "Lucas Harris", lastMessage: "Will do.", online: false, lastSeen: "1 day ago" },
-  { id: 18, name: "Charlotte Lewis", lastMessage: "Thanks a lot!", online: true, lastSeen: null },
-  { id: 19, name: "Mason Clark", lastMessage: "Sure thing.", online: false, lastSeen: "2 hours ago" },
-  { id: 20, name: "Amelia Robinson", lastMessage: "Great!", online: true, lastSeen: null },
-]);
-
-
   const [selectedFriend, setSelectedFriend] = useState(null);
-  const [messages, setMessages] = useState([]);
+  const [search, setSearch] = useState("");
   const [newMessage, setNewMessage] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  const handleSelectFriend = (friend) => {
-    setSelectedFriend(friend);
-    setMessages([
-      { sender: "me", text: "Hi " + friend.name + "!" },
-      { sender: friend.name, text: friend.lastMessage },
-    ]);
-  };
+  const [friends] = useState([
+    { id: 1, name: "John Doe", online: true, lastSeen: null },
+    { id: 2, name: "Sarah Lee", online: false, lastSeen: "10 min ago" },
+    { id: 3, name: "Alex Kim", online: false, lastSeen: "2 hours ago" },
+    { id: 4, name: "Nina Patel", online: true, lastSeen: null },
+    { id: 5, name: "Mike Johnson", online: false, lastSeen: "5 min ago" },
+    // Add up to 20 friends as before
+  ]);
 
-  const handleBack = () => {
-    setSelectedFriend(null);
-  };
+  // Predefined messages for each friend
+  const [messages, setMessages] = useState({
+    1: [
+      { sender: "friend", text: "Hey! How’s it going?" },
+      { sender: "me", text: "Hi John! All good 😊" },
+      { sender: "friend", text: "Want to catch up later?" },
+    ],
+    2: [
+      { sender: "friend", text: "Hello! Are you free today?" },
+      { sender: "me", text: "Hey Sarah, yes I am!" },
+    ],
+    3: [
+      { sender: "friend", text: "Check this out 😎" },
+    ],
+    // Initialize messages for other friends similarly
+  });
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
-    const msg = { sender: "me", text: newMessage };
-    setMessages((prev) => [...prev, msg]);
+    if (!newMessage.trim() || !selectedFriend) return;
+
+    setMessages((prev) => ({
+      ...prev,
+      [selectedFriend.id]: [
+        ...(prev[selectedFriend.id] || []),
+        { sender: "me", text: newMessage },
+        // Simulate friend reply
+        { sender: "friend", text: "Got your message! 👍" },
+      ],
+    }));
+
     setNewMessage("");
   };
 
-  const handleVideoCall = () => {
-    alert(`🎥 Starting video call with ${selectedFriend.name}...`);
+  const handleEmojiClick = (emojiData) => {
+    setNewMessage((prev) => prev + emojiData.emoji);
   };
 
-  const handleVoiceCall = () => {
-    alert(`📞 Starting voice call with ${selectedFriend.name}...`);
-  };
-
-  // ✅ Filter friends based on search term
   const filteredFriends = friends.filter((f) =>
-    f.name.toLowerCase().includes(searchTerm.toLowerCase())
+    f.name.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div
-      className={`friends-container ${selectedFriend ? "chat-active" : ""}`}
-    >
+    <div className="friends-container">
       {/* Friends List */}
-      <div className="friends-list">
+      <div className={`friends-list ${selectedFriend ? "hidden-mobile" : ""}`}>
         <h2>Friends</h2>
-
-        {/* Search Input */}
-        <div className="friend-search">
-          <Search size={16} />
-          <input
-            type="text"
-            placeholder="Search friends..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
+        <input
+          type="text"
+          className="search-input"
+          placeholder="🔍 Search friends..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
         <ul>
           {filteredFriends.map((friend) => (
             <li
               key={friend.id}
+              onClick={() => setSelectedFriend(friend)}
               className={selectedFriend?.id === friend.id ? "active" : ""}
-              onClick={() => handleSelectFriend(friend)}
             >
-              <div className="friend-info">
-                <div className="status-icon">
-                  <Circle
-                    size={12}
-                    fill={friend.online ? "green" : "gray"}
-                    stroke={friend.online ? "green" : "gray"}
-                  />
-                </div>
-                <div className="friend-details">
-                  <span className="friend-name">{friend.name}</span>
-                  <p className="last-message">{friend.lastMessage}</p>
-                </div>
+              <div className="friend-avatar">
+                {friend.online ? <CircleDot className="online-icon" size={12} /> : <Circle className="offline-icon" size={12} />}
               </div>
-              <span className="last-seen">
-                {friend.online ? "Online" : `Last seen ${friend.lastSeen}`}
-              </span>
+              <div className="friend-info">
+                <p className="name">{friend.name}</p>
+                <p className="status">{friend.online ? "Online 🟢" : `Last seen ⏰ ${friend.lastSeen}`}</p>
+              </div>
             </li>
           ))}
-          {filteredFriends.length === 0 && <p className="no-friends">No friends found</p>}
         </ul>
       </div>
 
       {/* Chat Panel */}
-      <div className="chat-panel">
-        {selectedFriend ? (
-          <>
-            <div className="chat-header">
-              <button
-                className="icon-btn back-btn"
-                onClick={handleBack}
-                title="Back"
-              >
-                <ArrowLeft size={20} />
-              </button>
-
-              <div className="chat-friend-info">
-                <Circle
-                  size={10}
-                  fill={selectedFriend.online ? "green" : "gray"}
-                  stroke={selectedFriend.online ? "green" : "gray"}
-                />
-                <h3>{selectedFriend.name}</h3>
-                <span className="chat-status">
-                  {selectedFriend.online
-                    ? "Online"
-                    : `Last seen ${selectedFriend.lastSeen}`}
-                </span>
-              </div>
-
-              <div className="chat-actions">
-                <button
-                  className="icon-btn"
-                  title="Voice Call"
-                  onClick={handleVoiceCall}
-                >
-                  <Phone size={20} />
-                </button>
-                <button
-                  className="icon-btn"
-                  title="Video Call"
-                  onClick={handleVideoCall}
-                >
-                  <Video size={20} />
-                </button>
-              </div>
+      {selectedFriend && (
+        <div className="chat-panel">
+          <div className="chat-header">
+            <button className="back-btn mobile-only" onClick={() => setSelectedFriend(null)}>
+              <ArrowLeft size={20} />
+            </button>
+            <h3>{selectedFriend.name}</h3>
+            <span className="chat-status">{selectedFriend.online ? "Online 🟢" : `Last seen ⏰ ${selectedFriend.lastSeen}`}</span>
+            <div className="chat-actions">
+              <Video className="chat-icon" />
+              <Phone className="chat-icon" />
             </div>
-
-            <div className="chat-messages">
-              {messages.map((msg, index) => (
-                <div
-                  key={index}
-                  className={`chat-message ${
-                    msg.sender === "me" ? "sent" : "received"
-                  }`}
-                >
-                  <p>{msg.text}</p>
-                </div>
-              ))}
-            </div>
-
-            <form className="chat-input" onSubmit={handleSendMessage}>
-              <input
-                type="text"
-                placeholder="Type a message..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-              />
-              <button type="submit">Send</button>
-            </form>
-          </>
-        ) : (
-          <div className="no-chat">
-            <p>Select a friend to start chatting 💬</p>
           </div>
-        )}
-      </div>
+
+          {/* Chat Messages */}
+          <div className="chat-messages">
+            {(messages[selectedFriend.id] || []).map((msg, i) => (
+              <div key={i} className={`message ${msg.sender === "me" ? "sent" : "received"}`}>
+                {msg.text}
+              </div>
+            ))}
+          </div>
+
+          {/* Chat Input with Emoji */}
+          <form className="chat-input" onSubmit={handleSendMessage}>
+            <button type="button" className="emoji-btn" onClick={() => setShowEmojiPicker((prev) => !prev)}>
+              <Smile size={22} />
+            </button>
+            <input
+              type="text"
+              placeholder="Type a message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+            />
+            <button type="submit">Send</button>
+          </form>
+
+          {/* Emoji Picker */}
+          {showEmojiPicker && (
+            <div className="emoji-picker">
+              <div className="emoji-picker-header">
+                <span>Select Emoji 😄</span>
+                <button type="button" className="emoji-cancel-btn" onClick={() => setShowEmojiPicker(false)}>❌</button>
+              </div>
+              <EmojiPicker onEmojiClick={handleEmojiClick} />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
