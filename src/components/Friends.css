@@ -90,6 +90,7 @@
   position: relative;
 }
 
+/* Chat header fixed at top */
 .chat-header {
   display: flex;
   align-items: center;
@@ -98,8 +99,11 @@
   background: #fff;
   border-bottom: 1px solid #ddd;
   z-index: 2;
+  position: sticky;
+  top: 0;
 }
 
+/* Left part of header */
 .chat-header-left {
   display: flex;
   flex-direction: column;
@@ -125,6 +129,7 @@
   flex-direction: column;
   gap: 6px;
   overflow-y: auto;
+  background: #e5ddd5;
 }
 
 .message-container {
@@ -180,7 +185,8 @@
   padding: 8px 12px;
   background: #fff;
   border-top: 1px solid #ddd;
-  position: relative;
+  position: sticky;
+  bottom: 0;
   z-index: 2;
 }
 
