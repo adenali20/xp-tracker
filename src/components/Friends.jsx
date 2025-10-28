@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import EmojiPicker from "emoji-picker-react";
-import { Video, Phone, Smile, ArrowLeft } from "lucide-react";
+import { Video, Phone, Smile, ArrowLeft, CircleDot, Circle, Image } from "lucide-react";
 import "./Friends.css";
 
 const Friends = () => {
@@ -8,10 +8,9 @@ const Friends = () => {
   const [search, setSearch] = useState("");
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
 
-  const messagesEndRef = useRef(null);
-  const chatInputRef = useRef(null);
+  const chatEndRef = useRef(null);
 
   const [friends] = useState([
     { id: 1, name: "John Doe", online: true, lastSeen: null },
@@ -19,67 +18,69 @@ const Friends = () => {
     { id: 3, name: "Alex Kim", online: false, lastSeen: "2 hours ago" },
     { id: 4, name: "Nina Patel", online: true, lastSeen: null },
     { id: 5, name: "Mike Johnson", online: false, lastSeen: "5 min ago" },
-    { id: 6, name: "Emma Watson", online: true, lastSeen: null },
-    { id: 7, name: "Chris Evans", online: false, lastSeen: "1 hour ago" },
-    { id: 8, name: "Robert Downey", online: true, lastSeen: null },
-    { id: 9, name: "Scarlett Johansson", online: false, lastSeen: "30 min ago" },
-    { id: 10, name: "Tom Holland", online: true, lastSeen: null },
-    { id: 11, name: "Benedict Cumberbatch", online: false, lastSeen: "2 hours ago" },
-    { id: 12, name: "Mark Ruffalo", online: true, lastSeen: null },
-    { id: 13, name: "Chris Hemsworth", online: false, lastSeen: "10 min ago" },
-    { id: 14, name: "Paul Rudd", online: true, lastSeen: null },
-    { id: 15, name: "Elizabeth Olsen", online: false, lastSeen: "5 min ago" },
-    { id: 16, name: "Anthony Mackie", online: true, lastSeen: null },
-    { id: 17, name: "Sebastian Stan", online: false, lastSeen: "1 hour ago" },
-    { id: 18, name: "Brie Larson", online: true, lastSeen: null },
-    { id: 19, name: "Don Cheadle", online: false, lastSeen: "2 hours ago" },
-    { id: 20, name: "Chris Pratt", online: true, lastSeen: null },
+    { id: 6, name: "Emily Clark", online: true, lastSeen: null },
+    { id: 7, name: "David Smith", online: false, lastSeen: "1 hour ago" },
+    { id: 8, name: "Sophia Brown", online: true, lastSeen: null },
+    { id: 9, name: "James Wilson", online: false, lastSeen: "20 min ago" },
+    { id: 10, name: "Olivia Taylor", online: true, lastSeen: null },
+    { id: 11, name: "Liam Anderson", online: false, lastSeen: "3 hours ago" },
+    { id: 12, name: "Ava Martinez", online: true, lastSeen: null },
+    { id: 13, name: "Noah Thomas", online: false, lastSeen: "15 min ago" },
+    { id: 14, name: "Mia Robinson", online: true, lastSeen: null },
+    { id: 15, name: "Ethan Harris", online: false, lastSeen: "2 hours ago" },
+    { id: 16, name: "Isabella Lewis", online: true, lastSeen: null },
+    { id: 17, name: "Mason Young", online: false, lastSeen: "5 min ago" },
+    { id: 18, name: "Charlotte King", online: true, lastSeen: null },
+    { id: 19, name: "Logan Scott", online: false, lastSeen: "1 hour ago" },
+    { id: 20, name: "Amelia Green", online: true, lastSeen: null },
   ]);
 
   const [messages, setMessages] = useState({});
 
-  // Scroll to bottom when messages change
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-  useEffect(() => { scrollToBottom(); }, [messages, selectedFriend]);
-
-  // Scroll when mobile keyboard opens
-  useEffect(() => {
-    const handleFocus = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
-    const inputEl = chatInputRef.current;
-    if (inputEl) inputEl.addEventListener("focus", handleFocus);
-    return () => { if (inputEl) inputEl.removeEventListener("focus", handleFocus); };
-  }, []);
+  const filteredFriends = friends.filter((f) =>
+    f.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!newMessage.trim() && !imagePreview) return;
-    if (!selectedFriend) return;
+    if (!selectedFriend || (!newMessage.trim() && !imageFile)) return;
 
-    const newMsg = [];
-    if (newMessage.trim()) newMsg.push({ sender: "me", text: newMessage, time: new Date() });
-    if (imagePreview) {
-      newMsg.push({ sender: "me", image: imagePreview, time: new Date() });
-      setImagePreview(null);
-    }
+    const newMsg = {
+      sender: "me",
+      text: newMessage,
+      image: imageFile ? URL.createObjectURL(imageFile) : null,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
 
-    // Simulated friend reply
-    newMsg.push({ sender: "friend", text: "Got your message! 👍", time: new Date() });
+    const replyMsg = {
+      sender: "friend",
+      text: "Got your message! 👍",
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
 
-    setMessages(prev => ({
+    setMessages((prev) => ({
       ...prev,
-      [selectedFriend.id]: [...(prev[selectedFriend.id] || []), ...newMsg]
+      [selectedFriend.id]: [...(prev[selectedFriend.id] || []), newMsg, replyMsg],
     }));
 
     setNewMessage("");
+    setImageFile(null);
     setShowEmojiPicker(false);
   };
 
-  const handleEmojiClick = (emojiData) => { setNewMessage(prev => prev + emojiData.emoji); };
-  const handleImageUpload = (e) => { if(e.target.files && e.target.files[0]) setImagePreview(URL.createObjectURL(e.target.files[0])); };
+  const handleEmojiClick = (emojiData) => {
+    setNewMessage((prev) => prev + emojiData.emoji);
+  };
 
-  const filteredFriends = friends.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, selectedFriend]);
+
+  const handleImageChange = (e) => {
+    if (e.target.files[0]) setImageFile(e.target.files[0]);
+  };
+
+  const removeImage = () => setImageFile(null);
 
   return (
     <div className="friends-container">
@@ -88,26 +89,31 @@ const Friends = () => {
         <h2>Friends</h2>
         <input
           type="text"
+          className="search-input"
           placeholder="🔍 Search friends..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="search-input"
         />
         <div className="friends-scroll">
-          <ul>
-            {filteredFriends.map(friend => (
-              <li key={friend.id} className={`friend-item ${selectedFriend?.id === friend.id ? "selected" : ""}`}
-                onClick={() => setSelectedFriend(friend)}>
-                <div className="friend-avatar">
-                  <span className={`status-dot ${friend.online ? "online" : "offline"}`}></span>
-                </div>
-                <div className="friend-info">
-                  <p className="name">{friend.name}</p>
-                  <p className="status">{friend.online ? "Online 🟢" : `Last seen ⏰ ${friend.lastSeen}`}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {filteredFriends.map((friend) => (
+            <div
+              key={friend.id}
+              className={`friend-item ${selectedFriend?.id === friend.id ? "selected" : ""}`}
+              onClick={() => setSelectedFriend(friend)}
+            >
+              <div className="friend-avatar">
+                <span
+                  className={`status-dot ${friend.online ? "online" : "offline"}`}
+                ></span>
+              </div>
+              <div className="friend-info">
+                <p className="name">{friend.name}</p>
+                <p className="status">
+                  {friend.online ? "Online 🟢" : `Last seen ⏰ ${friend.lastSeen}`}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -115,10 +121,16 @@ const Friends = () => {
       {selectedFriend && (
         <div className="chat-panel">
           <div className="chat-header">
-            <button className="back-btn mobile-only" onClick={() => setSelectedFriend(null)}><ArrowLeft size={20} /></button>
             <div className="chat-header-left">
-              <p className="name">{selectedFriend.name}</p>
-              <p className="status">{selectedFriend.online ? "Online 🟢" : `Last seen ⏰ ${selectedFriend.lastSeen}`}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <button className="back-btn mobile-only" onClick={() => setSelectedFriend(null)}>
+                  <ArrowLeft size={20} />
+                </button>
+                <p className="name">{selectedFriend.name}</p>
+              </div>
+              <p className="status">
+                {selectedFriend.online ? "Online 🟢" : `Last seen ⏰ ${selectedFriend.lastSeen}`}
+              </p>
             </div>
             <div className="actions">
               <Video className="chat-icon" />
@@ -126,41 +138,56 @@ const Friends = () => {
             </div>
           </div>
 
+          {/* Messages */}
           <div className="chat-messages">
             {(messages[selectedFriend.id] || []).map((msg, i) => (
               <div key={i} className="message-container">
                 <div className={`message ${msg.sender === "me" ? "sent" : "received"}`}>
                   {msg.text}
-                  {msg.image && <img src={msg.image} alt="sent" className="message-image" />}
+                  {msg.image && (
+                    <img src={msg.image} alt="sent" className="message-image" />
+                  )}
                 </div>
                 <span className={`message-time ${msg.sender === "me" ? "sent-time" : "received-time"}`}>
-                  {msg.time.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}
+                  {msg.time}
                 </span>
               </div>
             ))}
-            <div ref={messagesEndRef} />
+            <div ref={chatEndRef}></div>
           </div>
 
-          {imagePreview && (
-            <div className="image-preview">
-              <img src={imagePreview} alt="preview" />
-              <button onClick={() => setImagePreview(null)}>❌</button>
-            </div>
-          )}
-
+          {/* Chat Input */}
           <form className="chat-input" onSubmit={handleSendMessage}>
-            <button type="button" className="emoji-btn" onClick={() => setShowEmojiPicker(prev => !prev)}><Smile size={22} /></button>
-            <input ref={chatInputRef} type="text" placeholder="Type a message..." value={newMessage} onChange={(e)=>setNewMessage(e.target.value)} />
-            <label htmlFor="image-upload">📎</label>
-            <input type="file" id="image-upload" accept="image/*" onChange={handleImageUpload} />
+            <button type="button" className="emoji-btn" onClick={() => setShowEmojiPicker((prev) => !prev)}>
+              <Smile size={22} />
+            </button>
+            <input
+              type="text"
+              placeholder="Type a message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+            />
+            <label htmlFor="image-upload" style={{ cursor: "pointer" }}>
+              <Image size={22} />
+            </label>
+            <input type="file" id="image-upload" accept="image/*" onChange={handleImageChange} />
             <button type="submit">Send</button>
           </form>
 
+          {/* Show selected image preview */}
+          {imageFile && (
+            <div className="image-preview">
+              <img src={URL.createObjectURL(imageFile)} alt="preview" />
+              <button onClick={removeImage}>❌</button>
+            </div>
+          )}
+
+          {/* Emoji Picker */}
           {showEmojiPicker && (
             <div className="emoji-popup">
               <div className="emoji-header">
-                <span>Pick Emoji 😄</span>
-                <button className="emoji-cancel-btn" onClick={()=>setShowEmojiPicker(false)}>❌</button>
+                <span>Choose Emoji 😄</span>
+                <button className="emoji-cancel-btn" onClick={() => setShowEmojiPicker(false)}>❌</button>
               </div>
               <EmojiPicker onEmojiClick={handleEmojiClick} />
             </div>

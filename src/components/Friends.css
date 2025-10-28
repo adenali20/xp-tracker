@@ -6,7 +6,6 @@
   height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: #f7f9fb;
-  overflow: hidden;
 }
 
 /* ==============================
@@ -20,7 +19,7 @@
   background: #fff;
   border-right: 1px solid #ddd;
   padding: 1rem;
-  height: 100%; /* full height for desktop */
+  height: 100%;
 }
 
 .friends-list h2 {
@@ -87,10 +86,9 @@
   display: flex;
   flex-direction: column;
   background: #e5ddd5;
-  position: relative;
 }
 
-/* Chat header fixed at top */
+/* Chat header fixed */
 .chat-header {
   display: flex;
   align-items: center;
@@ -98,9 +96,9 @@
   padding: 0.75rem 1rem;
   background: #fff;
   border-bottom: 1px solid #ddd;
-  z-index: 2;
   position: sticky;
   top: 0;
+  z-index: 2;
 }
 
 /* Left part of header */
@@ -124,12 +122,11 @@
 ============================== */
 .chat-messages {
   flex: 1;
+  overflow-y: auto;
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  overflow-y: auto;
-  background: #e5ddd5;
 }
 
 .message-container {
@@ -285,14 +282,14 @@
 
   .friends-list {
     width: 100%;
-    height: 100vh; /* full screen height for friends list */
+    height: 100vh;
     border-right: none;
     border-bottom: 1px solid #ddd;
   }
 
   .chat-panel {
     width: 100%;
-    height: 100vh; /* full height for chat panel when selected */
+    height: 100vh;
     display: flex;
     flex-direction: column;
   }
