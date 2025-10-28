@@ -15,37 +15,47 @@ const Friends = () => {
     { id: 3, name: "Alex Kim", online: false, lastSeen: "2 hours ago" },
     { id: 4, name: "Nina Patel", online: true, lastSeen: null },
     { id: 5, name: "Mike Johnson", online: false, lastSeen: "5 min ago" },
-    // Add up to 20 friends as before
+    { id: 6, name: "Emma Watson", online: true, lastSeen: null },
+    { id: 7, name: "David Brown", online: false, lastSeen: "1 hour ago" },
+    { id: 8, name: "Sophia Lee", online: true, lastSeen: null },
+    { id: 9, name: "James Smith", online: false, lastSeen: "30 min ago" },
+    { id: 10, name: "Olivia Davis", online: true, lastSeen: null },
+    { id: 11, name: "Liam Wilson", online: false, lastSeen: "3 hours ago" },
+    { id: 12, name: "Ava Martinez", online: true, lastSeen: null },
+    { id: 13, name: "Ethan Anderson", online: false, lastSeen: "45 min ago" },
+    { id: 14, name: "Mia Thomas", online: true, lastSeen: null },
+    { id: 15, name: "Noah Jackson", online: false, lastSeen: "20 min ago" },
+    { id: 16, name: "Isabella White", online: true, lastSeen: null },
+    { id: 17, name: "Lucas Harris", online: false, lastSeen: "1 day ago" },
+    { id: 18, name: "Charlotte Lewis", online: true, lastSeen: null },
+    { id: 19, name: "Mason Clark", online: false, lastSeen: "2 hours ago" },
+    { id: 20, name: "Amelia Robinson", online: true, lastSeen: null },
   ]);
 
-  // Predefined messages for each friend
   const [messages, setMessages] = useState({
     1: [
-      { sender: "friend", text: "Hey! How’s it going?" },
-      { sender: "me", text: "Hi John! All good 😊" },
-      { sender: "friend", text: "Want to catch up later?" },
+      { sender: "friend", text: "Hey! How’s it going?", timestamp: "10:00 AM" },
+      { sender: "me", text: "Hi John! All good 😊", timestamp: "10:01 AM" },
+      { sender: "friend", text: "Want to catch up later?", timestamp: "10:02 AM" },
     ],
     2: [
-      { sender: "friend", text: "Hello! Are you free today?" },
-      { sender: "me", text: "Hey Sarah, yes I am!" },
+      { sender: "friend", text: "Hello! Are you free today?", timestamp: "09:30 AM" },
+      { sender: "me", text: "Hey Sarah, yes I am!", timestamp: "09:32 AM" },
     ],
-    3: [
-      { sender: "friend", text: "Check this out 😎" },
-    ],
-    // Initialize messages for other friends similarly
   });
 
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedFriend) return;
 
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
     setMessages((prev) => ({
       ...prev,
       [selectedFriend.id]: [
         ...(prev[selectedFriend.id] || []),
-        { sender: "me", text: newMessage },
-        // Simulate friend reply
-        { sender: "friend", text: "Got your message! 👍" },
+        { sender: "me", text: newMessage, timestamp: timeNow },
+        { sender: "friend", text: "Got your message! 👍", timestamp: timeNow },
       ],
     }));
 
@@ -109,15 +119,20 @@ const Friends = () => {
           {/* Chat Messages */}
           <div className="chat-messages">
             {(messages[selectedFriend.id] || []).map((msg, i) => (
-              <div key={i} className={`message ${msg.sender === "me" ? "sent" : "received"}`}>
-                {msg.text}
+              <div key={i} className="message-container">
+                <div className={`message ${msg.sender === "me" ? "sent" : "received"}`}>
+                  {msg.text}
+                </div>
+                <span className={`message-time ${msg.sender === "me" ? "sent-time" : "received-time"}`}>
+                  {msg.timestamp}
+                </span>
               </div>
             ))}
           </div>
 
-          {/* Chat Input with Emoji */}
+          {/* Chat Input */}
           <form className="chat-input" onSubmit={handleSendMessage}>
-            <button type="button" className="emoji-btn" onClick={() => setShowEmojiPicker((prev) => !prev)}>
+            <button type="button" className="emoji-btn" onClick={() => setShowEmojiPicker(prev => !prev)}>
               <Smile size={22} />
             </button>
             <input
