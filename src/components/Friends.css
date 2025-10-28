@@ -1,288 +1,360 @@
+/* ==============================
+   Friends.css - reliable layout
+   ============================== */
+
+/* Basic reset + box sizing */
+* {
+  box-sizing: border-box;
+}
+
+/* Container */
 .friends-container {
   display: flex;
-  height: 100vh;
+  height: 100vh;                /* full viewport height */
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: #f9f9f9;
+  background: #f7f9fb;
+  overflow: hidden;             /* keep root from scrolling */
+}
+
+/* ------------------------------
+   Friends list (left column)
+   - independent scroll
+   ------------------------------ */
+.friends-list {
+  width: 300px;                 /* fixed sidebar width */
+  min-width: 240px;
+  background: #fff;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 8px;
+  /* make friends list independently scrollable */
   overflow: hidden;
 }
 
-/* FRIENDS LIST */
-.friends-list {
-  width: 300px;
-  min-width: 250px;
-  background: #fff;
-  border-right: 1px solid #ddd;
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
-  overflow-y: auto;
-}
-
+/* Header + search area */
 .friends-list h2 {
-  margin-bottom: 0.5rem;
+  margin: 0 0 6px 0;
+  font-size: 1.05rem;
 }
 
 .search-input {
-  padding: 0.4rem 0.6rem;
+  width: 100%;
+  padding: 8px 10px;
   border-radius: 8px;
-  border: 1px solid #ccc;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
+  border: 1px solid #d0d0d0;
+  font-size: 0.95rem;
 }
 
-.friends-list ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+/* Scrollable area for friends items */
+.friends-list .friends-scroll {
+  margin-top: 8px;
+  overflow-y: auto;
+  padding-right: 6px;           /* spare room for scrollbar */
+  flex: 1;                      /* fills remaining vertical space */
 }
 
-.friends-list li {
+/* friend item */
+.friend-item {
   display: flex;
   align-items: center;
-  padding: 0.6rem;
-  cursor: pointer;
+  gap: 10px;
+  padding: 10px;
   border-radius: 8px;
-  transition: background 0.2s;
+  cursor: pointer;
 }
 
-.friends-list li:hover,
-.friends-list li.active {
-  background: #f0f0f0;
+.friend-item:hover {
+  background: #f2f6fa;
+}
+
+.friend-item.selected {
+  background: #e8f0ff;
 }
 
 .friend-avatar {
-  margin-right: 0.5rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ddd;
+  position: relative;
+  flex-shrink: 0;
 }
 
-.online-icon {
-  color: green;
+.status-dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #fff;
 }
 
-.offline-icon {
-  color: gray;
+.status-dot.online { background: #28a745; }
+.status-dot.offline { background: #b5b5b5; }
+
+.friend-info {
+  flex: 1;
+  min-width: 0; /* allow text truncation */
 }
 
 .friend-info .name {
+  margin: 0;
   font-weight: 600;
+  font-size: 0.98rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .friend-info .status {
-  font-size: 0.75rem;
-  color: #555;
+  margin: 2px 0 0 0;
+  font-size: 0.8rem;
+  color: #666;
 }
 
-/* CHAT PANEL */
+/* ------------------------------
+   Chat area (right column)
+   - header
+   - messages (scrollable)
+   - input (stays at bottom)
+   ------------------------------ */
 .chat-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #e5ddd5;
-  position: relative;
+  background: #eef3f7;
+  min-width: 0; /* allow proper flex shrink */
 }
 
+/* header */
 .chat-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #ddd;
+  padding: 12px 16px;
   background: #fff;
+  border-bottom: 1px solid #e6e6e6;
+  gap: 12px;
 }
 
-.chat-actions {
+.chat-header-left {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 12px;
+  min-width: 0;
 }
 
-.chat-icon {
-  cursor: pointer;
+.chat-header-left .name {
+  font-weight: 600;
+  margin: 0;
+  font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* MESSAGES */
+.chat-header .actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* messages - the scrollable area */
 .chat-messages {
-  flex: 1;
-  padding: 1rem;
-  overflow-y: auto;
+  flex: 1;                       /* takes all available space */
+  overflow-y: auto;              /* THIS enables scrolling */
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 10px;
+  -webkit-overflow-scrolling: touch; /* smooth on mobile */
 }
 
+/* message container (full width) */
 .message-container {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  max-width: 70%;
+  gap: 6px;
 }
 
-.sent-container {
-  align-self: flex-end;
-  align-items: flex-end;
-}
-
-.received-container {
-  align-self: flex-start;
-  align-items: flex-start;
-}
-
+/* basic bubble */
 .message {
-  padding: 0.6rem 1rem;
-  border-radius: 18px;
+  display: inline-block;
+  padding: 10px 12px;
+  border-radius: 14px;
+  max-width: 78%;
   word-wrap: break-word;
-  position: relative;
-  font-size: 0.95rem;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
 }
 
-.sent {
+/* sent (mine) */
+.message.sent {
   background: #007bff;
   color: #fff;
-  border-bottom-right-radius: 4px;
+  align-self: flex-end;   /* float right */
+  border-bottom-right-radius: 6px;
+  border-bottom-left-radius: 14px;
 }
 
-.received {
+/* received */
+.message.received {
   background: #fff;
-  color: #333;
-  border-bottom-left-radius: 4px;
+  color: #222;
+  align-self: flex-start; /* float left */
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 14px;
 }
 
+/* image inside bubble */
+.message img.message-image {
+  display: block;
+  max-width: 240px;
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+/* timestamp - outside bubble but aligned */
 .message-time {
   font-size: 0.75rem;
   color: #666;
-  margin-top: 0.2rem;
+  margin-top: 0px;
 }
 
-.sent-time {
-  text-align: right;
+.message-time.sent-time {
+  align-self: flex-end;
 }
 
-/* IMAGE MESSAGE */
-.message-image {
-  margin-top: 0.5rem;
-  max-width: 200px;
-  border-radius: 10px;
-  object-fit: cover;
+.message-time.received-time {
+  align-self: flex-start;
 }
 
-/* CHAT INPUT */
+/* ------------------------------
+   Input area (always after messages)
+   - NOT fixed; stays at bottom of chat-panel
+   ------------------------------ */
 .chat-input {
   display: flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  border-top: 1px solid #ddd;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid #e6e6e6;
   background: #fff;
-  gap: 0.5rem;
-  position: relative;
+  align-items: center;
 }
 
-.chat-input input {
+.chat-input input[type="text"] {
   flex: 1;
-  padding: 0.4rem 0.6rem;
+  padding: 10px 12px;
   border-radius: 20px;
-  border: 1px solid #ccc;
+  border: 1px solid #d0d0d0;
+  font-size: 0.95rem;
+  outline: none;
 }
 
-.chat-input button[type="submit"] {
-  background: #007bff;
-  color: #fff;
-  border: none;
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
-  cursor: pointer;
-}
-
-.emoji-btn {
+.chat-input button {
   background: none;
   border: none;
   cursor: pointer;
-  color: #555;
+  font-size: 0.98rem;
+  padding: 6px 8px;
 }
 
-/* EMOJI PICKER */
-.emoji-picker {
-  position: absolute;
-  bottom: 60px;
-  right: 10px;
-  z-index: 100;
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  width: 300px;
-  max-height: 400px;
-  overflow: hidden;
+/* hidden native file input */
+.chat-input input[type="file"] {
+  display: none;
 }
 
-.emoji-picker-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #f5f5f5;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid #ddd;
-}
-
-.emoji-cancel-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-/* IMAGE PREVIEW */
+/* image preview box (appears above input) */
 .image-preview {
-  position: absolute;
-  bottom: 70px;
-  right: 20px;
-  background: #fff;
-  border: 1px solid #ccc;
-  padding: 0.5rem;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  display: flex;
-  flex-direction: column;
+  margin: 8px 12px;
+  display: inline-flex;
+  gap: 8px;
   align-items: center;
 }
 
 .image-preview img {
-  width: 150px;
+  width: 120px;
+  height: auto;
   border-radius: 8px;
-  margin-bottom: 0.5rem;
+  object-fit: cover;
 }
 
 .image-preview button {
-  border: none;
   background: #ff4d4d;
-  color: #fff;
-  border-radius: 5px;
+  color: white;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 6px;
   cursor: pointer;
-  padding: 2px 6px;
 }
 
-/* MOBILE */
+/* Emoji popup - positioned relative to chat-panel bottom-right */
+.emoji-popup {
+  position: absolute;
+  right: 12px;
+  bottom: 70px; /* sits above input */
+  z-index: 50;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+/* ------------------------------
+   Responsive (mobile)
+   Keep chat-messages scrollable and input visible
+   ------------------------------ */
 @media (max-width: 768px) {
   .friends-container {
     flex-direction: column;
   }
 
+  /* friends list becomes top panel */
   .friends-list {
     width: 100%;
-    border-bottom: 1px solid #ddd;
+    height: 40vh;
+    min-height: 180px;
+    border-right: none;
+    border-bottom: 1px solid #e6e6e6;
   }
 
-  .chat-panel {
+  .friends-list .friends-scroll {
     flex: 1;
+    overflow-y: auto;
   }
 
-  .hidden-mobile {
-    display: none;
+  /* chat area takes remaining viewport height */
+  .chat-panel {
+    height: calc(100vh - 40vh); /* remaining space */
+    min-height: 320px;
   }
 
-  .back-btn.mobile-only {
-    display: inline-flex;
+  /* ensure chat messages area scrolls within the smaller height */
+  .chat-messages {
+    padding-bottom: 8px;
+  }
+
+  /* input anchored visually but NOT fixed; occupies natural flow */
+  .chat-input {
+    position: relative;
+    z-index: 10;
   }
 }
 
-@media (min-width: 769px) {
-  .back-btn.mobile-only {
-    display: none;
-  }
+/* ------------------------------
+   Optional scrollbar styling
+   ------------------------------ */
+.friends-list .friends-scroll::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar {
+  width: 10px;
+}
+
+.friends-list .friends-scroll::-webkit-scrollbar-thumb,
+.chat-messages::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.12);
+  border-radius: 8px;
 }
