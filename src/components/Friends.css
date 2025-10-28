@@ -1,27 +1,28 @@
 /* ==============================
-   Friends.css - reliable layout
+   Friends.css - complete version
    ============================== */
 
-/* Basic reset + box sizing */
+/* Reset & box-sizing */
 * {
   box-sizing: border-box;
 }
 
-/* Container */
+/* ------------------------------
+   Container
+   ------------------------------ */
 .friends-container {
   display: flex;
-  height: 100vh;                /* full viewport height */
+  height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: #f7f9fb;
-  overflow: hidden;             /* keep root from scrolling */
+  overflow: hidden;
 }
 
-/* ------------------------------
-   Friends list (left column)
-   - independent scroll
+/* ==============================
+   Friends List
    ------------------------------ */
 .friends-list {
-  width: 300px;                 /* fixed sidebar width */
+  width: 300px;
   min-width: 240px;
   background: #fff;
   border-right: 1px solid #e0e0e0;
@@ -29,11 +30,8 @@
   flex-direction: column;
   padding: 12px;
   gap: 8px;
-  /* make friends list independently scrollable */
-  overflow: hidden;
 }
 
-/* Header + search area */
 .friends-list h2 {
   margin: 0 0 6px 0;
   font-size: 1.05rem;
@@ -47,15 +45,13 @@
   font-size: 0.95rem;
 }
 
-/* Scrollable area for friends items */
-.friends-list .friends-scroll {
+.friends-scroll {
   margin-top: 8px;
+  flex: 1;
   overflow-y: auto;
-  padding-right: 6px;           /* spare room for scrollbar */
-  flex: 1;                      /* fills remaining vertical space */
+  padding-right: 6px;
 }
 
-/* friend item */
 .friend-item {
   display: flex;
   align-items: center;
@@ -97,7 +93,7 @@
 
 .friend-info {
   flex: 1;
-  min-width: 0; /* allow text truncation */
+  min-width: 0;
 }
 
 .friend-info .name {
@@ -115,21 +111,17 @@
   color: #666;
 }
 
-/* ------------------------------
-   Chat area (right column)
-   - header
-   - messages (scrollable)
-   - input (stays at bottom)
+/* ==============================
+   Chat Panel
    ------------------------------ */
 .chat-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
   background: #eef3f7;
-  min-width: 0; /* allow proper flex shrink */
+  min-width: 0;
 }
 
-/* header */
 .chat-header {
   display: flex;
   align-items: center;
@@ -161,26 +153,31 @@
   gap: 8px;
 }
 
-/* messages - the scrollable area */
+.chat-icon {
+  cursor: pointer;
+  color: #555;
+}
+
+/* ------------------------------
+   Messages
+   ------------------------------ */
 .chat-messages {
-  flex: 1;                       /* takes all available space */
-  overflow-y: auto;              /* THIS enables scrolling */
+  flex: 1;
+  overflow-y: auto;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  -webkit-overflow-scrolling: touch; /* smooth on mobile */
+  -webkit-overflow-scrolling: touch;
 }
 
-/* message container (full width) */
 .message-container {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
-/* basic bubble */
 .message {
   display: inline-block;
   padding: 10px 12px;
@@ -190,25 +187,22 @@
   box-shadow: 0 1px 2px rgba(0,0,0,0.08);
 }
 
-/* sent (mine) */
 .message.sent {
   background: #007bff;
   color: #fff;
-  align-self: flex-end;   /* float right */
+  align-self: flex-end;
   border-bottom-right-radius: 6px;
   border-bottom-left-radius: 14px;
 }
 
-/* received */
 .message.received {
   background: #fff;
   color: #222;
-  align-self: flex-start; /* float left */
+  align-self: flex-start;
   border-bottom-left-radius: 6px;
   border-bottom-right-radius: 14px;
 }
 
-/* image inside bubble */
 .message img.message-image {
   display: block;
   max-width: 240px;
@@ -218,7 +212,7 @@
   margin-top: 8px;
 }
 
-/* timestamp - outside bubble but aligned */
+/* Timestamp outside bubble */
 .message-time {
   font-size: 0.75rem;
   color: #666;
@@ -234,41 +228,75 @@
 }
 
 /* ------------------------------
-   Input area (always after messages)
-   - NOT fixed; stays at bottom of chat-panel
+   Input + Emoji + Image
    ------------------------------ */
 .chat-input {
   display: flex;
-  gap: 8px;
-  padding: 10px 12px;
-  border-top: 1px solid #e6e6e6;
-  background: #fff;
   align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-top: 1px solid #ddd;
+  background: #fff;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
 }
 
 .chat-input input[type="text"] {
   flex: 1;
-  padding: 10px 12px;
+  padding: 10px 14px;
+  border: 1px solid #ccc;
   border-radius: 20px;
-  border: 1px solid #d0d0d0;
-  font-size: 0.95rem;
+  font-size: 14px;
   outline: none;
+  background: #fafafa;
 }
 
-.chat-input button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.98rem;
-  padding: 6px 8px;
-}
-
-/* hidden native file input */
 .chat-input input[type="file"] {
   display: none;
 }
 
-/* image preview box (appears above input) */
+.chat-input label,
+.chat-input .emoji-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: #f3f3f3;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  padding: 8px;
+  transition: background 0.2s ease, transform 0.1s ease;
+  color: #555;
+}
+
+.chat-input label:hover,
+.chat-input .emoji-btn:hover {
+  background: #e5e5e5;
+  transform: scale(1.05);
+}
+
+.chat-input button[type="submit"] {
+  background: #0078ff;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.chat-input button[type="submit"]:hover {
+  background: #005ecb;
+  transform: scale(1.05);
+}
+
+.chat-input svg {
+  color: #555;
+}
+
+/* Image preview above input */
 .image-preview {
   margin: 8px 12px;
   display: inline-flex;
@@ -292,11 +320,13 @@
   cursor: pointer;
 }
 
-/* Emoji popup - positioned relative to chat-panel bottom-right */
+/* ------------------------------
+   Emoji picker popup
+   ------------------------------ */
 .emoji-popup {
   position: absolute;
   right: 12px;
-  bottom: 70px; /* sits above input */
+  bottom: 70px;
   z-index: 50;
   background: #fff;
   border: 1px solid #ddd;
@@ -305,15 +335,13 @@
 }
 
 /* ------------------------------
-   Responsive (mobile)
-   Keep chat-messages scrollable and input visible
+   Mobile responsiveness
    ------------------------------ */
 @media (max-width: 768px) {
   .friends-container {
     flex-direction: column;
   }
 
-  /* friends list becomes top panel */
   .friends-list {
     width: 100%;
     height: 40vh;
@@ -327,33 +355,40 @@
     overflow-y: auto;
   }
 
-  /* chat area takes remaining viewport height */
   .chat-panel {
-    height: calc(100vh - 40vh); /* remaining space */
+    height: calc(100vh - 40vh);
     min-height: 320px;
   }
 
-  /* ensure chat messages area scrolls within the smaller height */
-  .chat-messages {
-    padding-bottom: 8px;
-  }
-
-  /* input anchored visually but NOT fixed; occupies natural flow */
   .chat-input {
     position: relative;
     z-index: 10;
   }
+
+  .hidden-mobile {
+    display: none;
+  }
+
+  .back-btn.mobile-only {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 769px) {
+  .back-btn.mobile-only {
+    display: none;
+  }
 }
 
 /* ------------------------------
-   Optional scrollbar styling
+   Scrollbar styling
    ------------------------------ */
-.friends-list .friends-scroll::-webkit-scrollbar,
+.friends-scroll::-webkit-scrollbar,
 .chat-messages::-webkit-scrollbar {
   width: 10px;
 }
 
-.friends-list .friends-scroll::-webkit-scrollbar-thumb,
+.friends-scroll::-webkit-scrollbar-thumb,
 .chat-messages::-webkit-scrollbar-thumb {
   background: rgba(0,0,0,0.12);
   border-radius: 8px;

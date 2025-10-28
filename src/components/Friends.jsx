@@ -5,8 +5,6 @@ import {
   Phone,
   Smile,
   ArrowLeft,
-  CircleDot,
-  Circle,
   Image as ImageIcon,
 } from "lucide-react";
 import "./Friends.css";
