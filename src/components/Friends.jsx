@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Circle, Video, Phone } from "lucide-react"; // ✅ Added Video & Phone icons
+import { Circle, Video, Phone, ArrowLeft } from "lucide-react";
 import "./Friends.css";
 
 const Friends = () => {
@@ -22,6 +22,10 @@ const Friends = () => {
     ]);
   };
 
+  const handleBack = () => {
+    setSelectedFriend(null);
+  };
+
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
@@ -40,8 +44,12 @@ const Friends = () => {
   };
 
   return (
-    <div className="friends-container">
-      {/* Sidebar */}
+    <div
+      className={`friends-container ${
+        selectedFriend ? "chat-active" : ""
+      }`}
+    >
+      {/* Friends List */}
       <div className="friends-list">
         <h2>Friends</h2>
         <ul>
@@ -77,6 +85,15 @@ const Friends = () => {
         {selectedFriend ? (
           <>
             <div className="chat-header">
+              {/* ✅ Back button for mobile */}
+              <button
+                className="icon-btn back-btn"
+                onClick={handleBack}
+                title="Back"
+              >
+                <ArrowLeft size={20} />
+              </button>
+
               <div className="chat-friend-info">
                 <Circle
                   size={10}
@@ -91,18 +108,18 @@ const Friends = () => {
                 </span>
               </div>
 
-              {/* ✅ Call Icons */}
+              {/* Call Icons */}
               <div className="chat-actions">
                 <button
                   className="icon-btn"
-                  title="Start voice call"
+                  title="Voice Call"
                   onClick={handleVoiceCall}
                 >
                   <Phone size={20} />
                 </button>
                 <button
                   className="icon-btn"
-                  title="Start video call"
+                  title="Video Call"
                   onClick={handleVideoCall}
                 >
                   <Video size={20} />
