@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import  { useState, useRef } from "react";
 import EmojiPicker from "emoji-picker-react";
 import {
   Video,
@@ -7,7 +7,6 @@ import {
   ArrowLeft,
   CircleDot,
   Circle,
-  X,
   Image as ImageIcon,
 } from "lucide-react";
 import "./Friends.css";
