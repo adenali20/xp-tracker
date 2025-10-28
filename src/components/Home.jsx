@@ -120,7 +120,7 @@ const Home = () => {
 
       <div className="actions">
         <button onClick={() => setShowAddModal(true)} className="btn primary">
-          + Add New Expense
+          Add New Expense
         </button>
       </div>
 
