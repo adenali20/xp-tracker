@@ -1,6 +1,3 @@
-/* ==============================
-   General container
-============================== */
 .friends-container {
   display: flex;
   height: 100vh;
@@ -9,9 +6,7 @@
   overflow: hidden;
 }
 
-/* ==============================
-   Friends List
-============================== */
+/* FRIENDS LIST */
 .friends-list {
   width: 300px;
   min-width: 250px;
@@ -44,12 +39,10 @@
 .friends-list li {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem 0.3rem;
+  padding: 0.6rem;
   cursor: pointer;
   border-radius: 8px;
   transition: background 0.2s;
-  position: relative;
 }
 
 .friends-list li:hover,
@@ -59,8 +52,6 @@
 
 .friend-avatar {
   margin-right: 0.5rem;
-  display: flex;
-  align-items: center;
 }
 
 .online-icon {
@@ -69,12 +60,6 @@
 
 .offline-icon {
   color: gray;
-}
-
-.friend-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
 }
 
 .friend-info .name {
@@ -86,9 +71,7 @@
   color: #555;
 }
 
-/* ==============================
-   Chat Panel
-============================== */
+/* CHAT PANEL */
 .chat-panel {
   flex: 1;
   display: flex;
@@ -104,19 +87,6 @@
   padding: 0.75rem 1rem;
   border-bottom: 1px solid #ddd;
   background: #fff;
-  position: relative;
-  z-index: 2;
-}
-
-.chat-header h3 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.chat-status {
-  font-size: 0.75rem;
-  color: #555;
-  margin-left: 0.5rem;
 }
 
 .chat-actions {
@@ -129,105 +99,72 @@
   cursor: pointer;
 }
 
-/* ==============================
-   Chat Messages
-============================== */
+/* MESSAGES */
 .chat-messages {
   flex: 1;
   padding: 1rem;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  box-sizing: border-box;
+  gap: 0.6rem;
 }
 
-/* Message container with timestamp outside */
 .message-container {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  width: 100%; /* full width for alignment */
-}
-
-.message-container .sent {
-  align-self: flex-end; /* bubble floats right */
   max-width: 70%;
 }
 
-.message-container .received {
-  align-self: flex-start; /* bubble floats left */
-  max-width: 70%;
+.sent-container {
+  align-self: flex-end;
+  align-items: flex-end;
 }
 
-/* Chat bubble base */
+.received-container {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
 .message {
   padding: 0.6rem 1rem;
-  border-radius: 20px;
-  font-size: 0.95rem;
-  line-height: 1.3;
+  border-radius: 18px;
   word-wrap: break-word;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  font-size: 0.95rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
-/* Sent message bubble */
 .sent {
   background: #007bff;
   color: #fff;
   border-bottom-right-radius: 4px;
 }
 
-.sent::after {
-  content: "";
-  position: absolute;
-  right: -6px;
-  bottom: 0;
-  width: 0;
-  height: 0;
-  border-top: 10px solid #007bff;
-  border-left: 10px solid transparent;
-}
-
-/* Received message bubble */
 .received {
   background: #fff;
   color: #333;
   border-bottom-left-radius: 4px;
 }
 
-.received::after {
-  content: "";
-  position: absolute;
-  left: -6px;
-  bottom: 0;
-  width: 0;
-  height: 0;
-  border-top: 10px solid #fff;
-  border-right: 10px solid transparent;
-}
-
-/* Timestamp outside chat bubble */
 .message-time {
-  font-size: 0.7rem;
-  color: #555;
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.2rem;
 }
 
 .sent-time {
-  align-self: flex-end;
-  margin-right: 6px;
+  text-align: right;
 }
 
-.received-time {
-  align-self: flex-start;
-  margin-left: 6px;
+/* IMAGE MESSAGE */
+.message-image {
+  margin-top: 0.5rem;
+  max-width: 200px;
+  border-radius: 10px;
+  object-fit: cover;
 }
 
-/* ==============================
-   Chat Input & Emoji
-============================== */
+/* CHAT INPUT */
 .chat-input {
   display: flex;
   align-items: center;
@@ -235,6 +172,7 @@
   border-top: 1px solid #ddd;
   background: #fff;
   gap: 0.5rem;
+  position: relative;
 }
 
 .chat-input input {
@@ -242,8 +180,6 @@
   padding: 0.4rem 0.6rem;
   border-radius: 20px;
   border: 1px solid #ccc;
-  font-size: 0.9rem;
-  outline: none;
 }
 
 .chat-input button[type="submit"] {
@@ -260,17 +196,9 @@
   border: none;
   cursor: pointer;
   color: #555;
-  display: flex;
-  align-items: center;
 }
 
-.emoji-btn:hover {
-  color: #007bff;
-}
-
-/* ==============================
-   Emoji Picker Popup
-============================== */
+/* EMOJI PICKER */
 .emoji-picker {
   position: absolute;
   bottom: 60px;
@@ -279,11 +207,9 @@
   background: #fff;
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  overflow: hidden;
   width: 300px;
   max-height: 400px;
-  display: flex;
-  flex-direction: column;
+  overflow: hidden;
 }
 
 .emoji-picker-header {
@@ -293,24 +219,45 @@
   background: #f5f5f5;
   padding: 0.5rem 1rem;
   border-bottom: 1px solid #ddd;
-  font-weight: 500;
 }
 
 .emoji-cancel-btn {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 18px;
-  color: #444;
 }
 
-.emoji-cancel-btn:hover {
-  color: red;
+/* IMAGE PREVIEW */
+.image-preview {
+  position: absolute;
+  bottom: 70px;
+  right: 20px;
+  background: #fff;
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-/* ==============================
-   Mobile Responsiveness
-============================== */
+.image-preview img {
+  width: 150px;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.image-preview button {
+  border: none;
+  background: #ff4d4d;
+  color: #fff;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+/* MOBILE */
 @media (max-width: 768px) {
   .friends-container {
     flex-direction: column;
@@ -318,8 +265,6 @@
 
   .friends-list {
     width: 100%;
-    max-height: 50%;
-    border-right: none;
     border-bottom: 1px solid #ddd;
   }
 
