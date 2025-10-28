@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import EmojiPicker from "emoji-picker-react";
-import { Video, Phone, Smile, ArrowLeft, CircleDot, Circle, Image } from "lucide-react";
+import { Video, Phone, Smile, ArrowLeft, Image } from "lucide-react";
 import "./Friends.css";
 
 const Friends = () => {
