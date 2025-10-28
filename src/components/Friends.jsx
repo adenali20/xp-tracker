@@ -1,34 +1,36 @@
 import { useState } from "react";
-import { Circle, Video, Phone, ArrowLeft } from "lucide-react";
+import { Circle, Video, Phone, ArrowLeft, Search } from "lucide-react";
 import "./Friends.css";
 
 const Friends = () => {
   const [friends] = useState([
-    { id: 1, name: "John Doe", lastMessage: "Hey there!", online: true, lastSeen: null },
-    { id: 2, name: "Sarah Lee", lastMessage: "Let’s catch up soon.", online: false, lastSeen: "10 min ago" },
-    { id: 3, name: "Alex Kim", lastMessage: "How’s it going?", online: false, lastSeen: "2 hours ago" },
-    { id: 4, name: "Nina Patel", lastMessage: "Ping me later.", online: true, lastSeen: null },
-    { id: 5, name: "John Doe", lastMessage: "Hey there!", online: true, lastSeen: null },
-    { id: 6, name: "Sarah Lee", lastMessage: "Let’s catch up soon.", online: false, lastSeen: "10 min ago" },
-    { id: 7, name: "Alex Kim", lastMessage: "How’s it going?", online: false, lastSeen: "2 hours ago" },
-    { id: 8, name: "Nina Patel", lastMessage: "Ping me later.", online: true, lastSeen: null },
-    { id: 9, name: "John Doe", lastMessage: "Hey there!", online: true, lastSeen: null },
-    { id: 10, name: "Sarah Lee", lastMessage: "Let’s catch up soon.", online: false, lastSeen: "10 min ago" },
-    { id: 11, name: "Alex Kim", lastMessage: "How’s it going?", online: false, lastSeen: "2 hours ago" },
-    { id: 12, name: "Nina Patel", lastMessage: "Ping me later.", online: true, lastSeen: null },
-    { id: 13, name: "John Doe", lastMessage: "Hey there!", online: true, lastSeen: null },
-    { id: 14, name: "Sarah Lee", lastMessage: "Let’s catch up soon.", online: false, lastSeen: "10 min ago" },
-    { id: 15, name: "Alex Kim", lastMessage: "How’s it going?", online: false, lastSeen: "2 hours ago" },
-    { id: 16, name: "Nina Patel", lastMessage: "Ping me later.", online: true, lastSeen: null },
-    { id: 17, name: "John Doe", lastMessage: "Hey there!", online: true, lastSeen: null },
-    { id: 18, name: "Sarah Lee", lastMessage: "Let’s catch up soon.", online: false, lastSeen: "10 min ago" },
-    { id: 19, name: "Alex Kim", lastMessage: "How’s it going?", online: false, lastSeen: "2 hours ago" },
-    { id: 20, name: "Nina Patel", lastMessage: "Ping me later.", online: true, lastSeen: null },
-  ]);
+  { id: 1, name: "John Doe", lastMessage: "Hey there!", online: true, lastSeen: null },
+  { id: 2, name: "Sarah Lee", lastMessage: "Let’s catch up soon.", online: false, lastSeen: "10 min ago" },
+  { id: 3, name: "Alex Kim", lastMessage: "How’s it going?", online: false, lastSeen: "2 hours ago" },
+  { id: 4, name: "Nina Patel", lastMessage: "Ping me later.", online: true, lastSeen: null },
+  { id: 5, name: "Mike Johnson", lastMessage: "See you soon!", online: false, lastSeen: "5 min ago" },
+  { id: 6, name: "Emma Watson", lastMessage: "Thanks!", online: true, lastSeen: null },
+  { id: 7, name: "David Brown", lastMessage: "On my way.", online: false, lastSeen: "1 hour ago" },
+  { id: 8, name: "Sophia Lee", lastMessage: "Got it.", online: true, lastSeen: null },
+  { id: 9, name: "James Smith", lastMessage: "Cool!", online: false, lastSeen: "30 min ago" },
+  { id: 10, name: "Olivia Davis", lastMessage: "See you tomorrow.", online: true, lastSeen: null },
+  { id: 11, name: "Liam Wilson", lastMessage: "No problem.", online: false, lastSeen: "3 hours ago" },
+  { id: 12, name: "Ava Martinez", lastMessage: "Happy Birthday!", online: true, lastSeen: null },
+  { id: 13, name: "Ethan Anderson", lastMessage: "Thanks for the help.", online: false, lastSeen: "45 min ago" },
+  { id: 14, name: "Mia Thomas", lastMessage: "See you later.", online: true, lastSeen: null },
+  { id: 15, name: "Noah Jackson", lastMessage: "Okay.", online: false, lastSeen: "20 min ago" },
+  { id: 16, name: "Isabella White", lastMessage: "Got it!", online: true, lastSeen: null },
+  { id: 17, name: "Lucas Harris", lastMessage: "Will do.", online: false, lastSeen: "1 day ago" },
+  { id: 18, name: "Charlotte Lewis", lastMessage: "Thanks a lot!", online: true, lastSeen: null },
+  { id: 19, name: "Mason Clark", lastMessage: "Sure thing.", online: false, lastSeen: "2 hours ago" },
+  { id: 20, name: "Amelia Robinson", lastMessage: "Great!", online: true, lastSeen: null },
+]);
+
 
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleSelectFriend = (friend) => {
     setSelectedFriend(friend);
@@ -45,7 +47,6 @@ const Friends = () => {
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
-
     const msg = { sender: "me", text: newMessage };
     setMessages((prev) => [...prev, msg]);
     setNewMessage("");
@@ -59,17 +60,32 @@ const Friends = () => {
     alert(`📞 Starting voice call with ${selectedFriend.name}...`);
   };
 
+  // ✅ Filter friends based on search term
+  const filteredFriends = friends.filter((f) =>
+    f.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div
-      className={`friends-container ${
-        selectedFriend ? "chat-active" : ""
-      }`}
+      className={`friends-container ${selectedFriend ? "chat-active" : ""}`}
     >
       {/* Friends List */}
       <div className="friends-list">
         <h2>Friends</h2>
+
+        {/* Search Input */}
+        <div className="friend-search">
+          <Search size={16} />
+          <input
+            type="text"
+            placeholder="Search friends..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
         <ul>
-          {friends.map((friend) => (
+          {filteredFriends.map((friend) => (
             <li
               key={friend.id}
               className={selectedFriend?.id === friend.id ? "active" : ""}
@@ -93,6 +109,7 @@ const Friends = () => {
               </span>
             </li>
           ))}
+          {filteredFriends.length === 0 && <p className="no-friends">No friends found</p>}
         </ul>
       </div>
 
@@ -101,7 +118,6 @@ const Friends = () => {
         {selectedFriend ? (
           <>
             <div className="chat-header">
-              {/* ✅ Back button for mobile */}
               <button
                 className="icon-btn back-btn"
                 onClick={handleBack}
@@ -124,7 +140,6 @@ const Friends = () => {
                 </span>
               </div>
 
-              {/* Call Icons */}
               <div className="chat-actions">
                 <button
                   className="icon-btn"
