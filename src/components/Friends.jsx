@@ -8,6 +8,22 @@ const Friends = () => {
     { id: 2, name: "Sarah Lee", lastMessage: "Let’s catch up soon.", online: false, lastSeen: "10 min ago" },
     { id: 3, name: "Alex Kim", lastMessage: "How’s it going?", online: false, lastSeen: "2 hours ago" },
     { id: 4, name: "Nina Patel", lastMessage: "Ping me later.", online: true, lastSeen: null },
+    { id: 5, name: "John Doe", lastMessage: "Hey there!", online: true, lastSeen: null },
+    { id: 6, name: "Sarah Lee", lastMessage: "Let’s catch up soon.", online: false, lastSeen: "10 min ago" },
+    { id: 7, name: "Alex Kim", lastMessage: "How’s it going?", online: false, lastSeen: "2 hours ago" },
+    { id: 8, name: "Nina Patel", lastMessage: "Ping me later.", online: true, lastSeen: null },
+    { id: 9, name: "John Doe", lastMessage: "Hey there!", online: true, lastSeen: null },
+    { id: 10, name: "Sarah Lee", lastMessage: "Let’s catch up soon.", online: false, lastSeen: "10 min ago" },
+    { id: 11, name: "Alex Kim", lastMessage: "How’s it going?", online: false, lastSeen: "2 hours ago" },
+    { id: 12, name: "Nina Patel", lastMessage: "Ping me later.", online: true, lastSeen: null },
+    { id: 13, name: "John Doe", lastMessage: "Hey there!", online: true, lastSeen: null },
+    { id: 14, name: "Sarah Lee", lastMessage: "Let’s catch up soon.", online: false, lastSeen: "10 min ago" },
+    { id: 15, name: "Alex Kim", lastMessage: "How’s it going?", online: false, lastSeen: "2 hours ago" },
+    { id: 16, name: "Nina Patel", lastMessage: "Ping me later.", online: true, lastSeen: null },
+    { id: 17, name: "John Doe", lastMessage: "Hey there!", online: true, lastSeen: null },
+    { id: 18, name: "Sarah Lee", lastMessage: "Let’s catch up soon.", online: false, lastSeen: "10 min ago" },
+    { id: 19, name: "Alex Kim", lastMessage: "How’s it going?", online: false, lastSeen: "2 hours ago" },
+    { id: 20, name: "Nina Patel", lastMessage: "Ping me later.", online: true, lastSeen: null },
   ]);
 
   const [selectedFriend, setSelectedFriend] = useState(null);
