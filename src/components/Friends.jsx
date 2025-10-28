@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import EmojiPicker from "emoji-picker-react";
 import { Video, Phone, Smile, ArrowLeft } from "lucide-react";
 import "./Friends.css";
@@ -9,6 +9,9 @@ const Friends = () => {
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+
+  const messagesEndRef = useRef(null);
+  const chatInputRef = useRef(null);
 
   const [friends] = useState([
     { id: 1, name: "John Doe", online: true, lastSeen: null },
@@ -35,17 +38,27 @@ const Friends = () => {
 
   const [messages, setMessages] = useState({});
 
+  // Scroll to bottom when messages change
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  useEffect(() => { scrollToBottom(); }, [messages, selectedFriend]);
+
+  // Scroll when mobile keyboard opens
+  useEffect(() => {
+    const handleFocus = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
+    const inputEl = chatInputRef.current;
+    if (inputEl) inputEl.addEventListener("focus", handleFocus);
+    return () => { if (inputEl) inputEl.removeEventListener("focus", handleFocus); };
+  }, []);
+
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!newMessage.trim() && !imagePreview) return;
     if (!selectedFriend) return;
 
     const newMsg = [];
-
-    if (newMessage.trim()) {
-      newMsg.push({ sender: "me", text: newMessage, time: new Date() });
-    }
-
+    if (newMessage.trim()) newMsg.push({ sender: "me", text: newMessage, time: new Date() });
     if (imagePreview) {
       newMsg.push({ sender: "me", image: imagePreview, time: new Date() });
       setImagePreview(null);
@@ -54,28 +67,19 @@ const Friends = () => {
     // Simulated friend reply
     newMsg.push({ sender: "friend", text: "Got your message! 👍", time: new Date() });
 
-    setMessages((prev) => ({
+    setMessages(prev => ({
       ...prev,
-      [selectedFriend.id]: [...(prev[selectedFriend.id] || []), ...newMsg],
+      [selectedFriend.id]: [...(prev[selectedFriend.id] || []), ...newMsg]
     }));
 
     setNewMessage("");
     setShowEmojiPicker(false);
   };
 
-  const handleEmojiClick = (emojiData) => {
-    setNewMessage((prev) => prev + emojiData.emoji);
-  };
+  const handleEmojiClick = (emojiData) => { setNewMessage(prev => prev + emojiData.emoji); };
+  const handleImageUpload = (e) => { if(e.target.files && e.target.files[0]) setImagePreview(URL.createObjectURL(e.target.files[0])); };
 
-  const handleImageUpload = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setImagePreview(URL.createObjectURL(e.target.files[0]));
-    }
-  };
-
-  const filteredFriends = friends.filter((f) =>
-    f.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredFriends = friends.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="friends-container">
@@ -91,22 +95,15 @@ const Friends = () => {
         />
         <div className="friends-scroll">
           <ul>
-            {filteredFriends.map((friend) => (
-              <li
-                key={friend.id}
-                className={`friend-item ${selectedFriend?.id === friend.id ? "selected" : ""}`}
-                onClick={() => setSelectedFriend(friend)}
-              >
+            {filteredFriends.map(friend => (
+              <li key={friend.id} className={`friend-item ${selectedFriend?.id === friend.id ? "selected" : ""}`}
+                onClick={() => setSelectedFriend(friend)}>
                 <div className="friend-avatar">
-                  <span
-                    className={`status-dot ${friend.online ? "online" : "offline"}`}
-                  ></span>
+                  <span className={`status-dot ${friend.online ? "online" : "offline"}`}></span>
                 </div>
                 <div className="friend-info">
                   <p className="name">{friend.name}</p>
-                  <p className="status">
-                    {friend.online ? "Online 🟢" : `Last seen ⏰ ${friend.lastSeen}`}
-                  </p>
+                  <p className="status">{friend.online ? "Online 🟢" : `Last seen ⏰ ${friend.lastSeen}`}</p>
                 </div>
               </li>
             ))}
@@ -118,9 +115,7 @@ const Friends = () => {
       {selectedFriend && (
         <div className="chat-panel">
           <div className="chat-header">
-            <button className="back-btn mobile-only" onClick={() => setSelectedFriend(null)}>
-              <ArrowLeft size={20} />
-            </button>
+            <button className="back-btn mobile-only" onClick={() => setSelectedFriend(null)}><ArrowLeft size={20} /></button>
             <div className="chat-header-left">
               <p className="name">{selectedFriend.name}</p>
               <p className="status">{selectedFriend.online ? "Online 🟢" : `Last seen ⏰ ${selectedFriend.lastSeen}`}</p>
@@ -139,10 +134,11 @@ const Friends = () => {
                   {msg.image && <img src={msg.image} alt="sent" className="message-image" />}
                 </div>
                 <span className={`message-time ${msg.sender === "me" ? "sent-time" : "received-time"}`}>
-                  {msg.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {msg.time.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}
                 </span>
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
 
           {imagePreview && (
@@ -153,20 +149,10 @@ const Friends = () => {
           )}
 
           <form className="chat-input" onSubmit={handleSendMessage}>
-            <button type="button" className="emoji-btn" onClick={() => setShowEmojiPicker((prev) => !prev)}>
-              <Smile size={22} />
-            </button>
-
-            <input
-              type="text"
-              placeholder="Type a message..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-            />
-
+            <button type="button" className="emoji-btn" onClick={() => setShowEmojiPicker(prev => !prev)}><Smile size={22} /></button>
+            <input ref={chatInputRef} type="text" placeholder="Type a message..." value={newMessage} onChange={(e)=>setNewMessage(e.target.value)} />
             <label htmlFor="image-upload">📎</label>
             <input type="file" id="image-upload" accept="image/*" onChange={handleImageUpload} />
-
             <button type="submit">Send</button>
           </form>
 
@@ -174,7 +160,7 @@ const Friends = () => {
             <div className="emoji-popup">
               <div className="emoji-header">
                 <span>Pick Emoji 😄</span>
-                <button className="emoji-cancel-btn" onClick={() => setShowEmojiPicker(false)}>❌</button>
+                <button className="emoji-cancel-btn" onClick={()=>setShowEmojiPicker(false)}>❌</button>
               </div>
               <EmojiPicker onEmojiClick={handleEmojiClick} />
             </div>
