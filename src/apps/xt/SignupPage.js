@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "./SignupPage.css";
-import axios from '../api/axios';
+import axios from '../../api/axios';
 import { useNavigate } from 'react-router-dom';
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -46,7 +46,7 @@ const SignupPage = () => {
       );
 
     //   const userDetails = { username: formData.name };
-      navigate('/login');
+      navigate('/xt/login');
     } catch (error) {
         setMessage("Signup failed.");
         console.log('Signup failed', error);

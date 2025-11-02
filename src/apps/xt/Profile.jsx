@@ -1,8 +1,8 @@
 import './Profile.css';
 import { useSelector, useDispatch } from 'react-redux';
-import { logout } from '../redux/reducers/userSlice';
+import { logout } from '../../redux/reducers/userSlice';
 import { useNavigate } from 'react-router-dom';
-import axios from '../api/axios';
+import axios from '../../api/axios';
 
 const Profile = () => {
   const { userDetails, isLoggedIn } = useSelector((state) => state.user);
@@ -16,7 +16,7 @@ const Profile = () => {
       console.error('Logout request failed (still logging out locally).', err);
     } finally {
       dispatch(logout());
-      navigate('/login');
+      navigate('/xt/login');
     }
   };
 

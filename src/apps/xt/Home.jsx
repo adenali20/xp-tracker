@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import axios from "../api/axios";
+import axios from "../../api/axios";
 import "./Home.css";
 
 const Home = () => {

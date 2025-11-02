@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import axios from '../api/axios';
+import axios from '../../api/axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { loginStart, loginSuccess, loginFailure } from '../redux/reducers/userSlice';
+import { loginStart, loginSuccess, loginFailure } from '../../redux/reducers/userSlice';
 import './Login.css'; // Import the CSS
 
 const Login = () => {
@@ -34,7 +34,7 @@ const Login = () => {
 
       const userDetails = { username: credentials.username };
       dispatch(loginSuccess(userDetails));
-      navigate('/');
+      navigate('/xt');
     } catch (error) {
       dispatch(loginFailure(error.response?.data?.message || 'Login failed'));
       console.log('Login failed', error);
