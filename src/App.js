@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import SoftwareEngineerProfile from "./apps/aden/SoftwareEngineerProfile";
 import XtPrivateRoute from "./routes/XtPrivateRoute";
-
+import NtPrivateRoute from "./routes/NtPrivateRoute";
 // XP Tracker
 import XtLayout from "./apps/xt/Layout";
 // import XtNavbar from "./apps/xt/XtNavbar";
@@ -10,13 +10,14 @@ import XtSignup from "./apps/xt/SignupPage";
 import Home from "./apps/xt/Home";
 import XtProfile from "./apps/xt/Profile";
 
-// // Chat
-// import ChatLayout from "./apps/chat/ChatLayout";
-// import ChatNavbar from "./apps/chat/ChatNavbar";
-// import ChatLogin from "./apps/chat/ChatLogin";
-// import ChatSignup from "./apps/chat/ChatSignup";
-// import ChatHome from "./apps/chat/ChatHome";
-// import Messages from "./apps/chat/Messages";
+// Chat
+// XP Tracker
+import NtLayout from "./apps/nt/Layout";
+// import XtNavbar from "./apps/xt/XtNavbar";
+import NtLogin from "./apps/nt/Login";
+import NtSignup from "./apps/nt/SignupPage";
+import NtFriends from "./apps/nt/Friends";
+// import XtProfile from "./apps/xt/Profile";
 
 const App = () => {
   return (
@@ -37,15 +38,15 @@ const App = () => {
         </Route>
 
         {/* --- CHAT --- */}
-        {/* <Route path="/chat/login" element={<ChatLogin />} />
-        <Route path="/chat/register" element={<ChatSignup />} />
+        <Route path="/nt/login" element={<NtLogin />} />
+        <Route path="/nt/register" element={<NtSignup />} />
+        {/* <Route path="/nt/friends" element={<NtFriends />} /> */}
 
-        <Route element={<PrivateRoute app="chat" />}>
-          <Route path="/chat" element={<ChatLayout />}>
-            <Route index element={<ChatHome />} />
-            <Route path="messages" element={<Messages />} />
+        <Route element={<NtPrivateRoute app="chat" />}>
+          <Route path="/nt" element={<NtLayout />}>
+            <Route index element={<NtFriends />} />
           </Route>
-        </Route> */}
+        </Route>
       </Routes>
     </Router>
   );
