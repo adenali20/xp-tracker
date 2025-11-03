@@ -1,65 +1,72 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import FriendsList from "./FriendsList";
 import ChatPanel from "./ChatPanel";
 import { fetchFriends } from "../../redux/reducers/friendsSlice";
+import io from "socket.io-client";
 import "./Friends.css";
+
+const SOCKET_URL = "http://10.0.0.167:3001"; // your server URL
 
 const Friends = () => {
   const dispatch = useDispatch();
-
-  // Safely access friends slice, provide defaults if undefined
   const friendsState = useSelector((state) => state.friends) || {};
   const { friends = [], loading = false, error = null } = friendsState;
 
-  // Local component state
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [search, setSearch] = useState("");
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [messages, setMessages] = useState({});
+  const [onlineUsers, setOnlineUsers] = useState([]); // ✅ Track online users
 
-  // Fetch friends from API on mount
+  const socketRef = useRef(null);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwtToken");
+    if (!token) return;
+
+    const socket = io(SOCKET_URL, {
+      auth: { token },
+    });
+    socketRef.current = socket;
+
+    // Receive message
+    socket.on("receiveMessage", (data) => {
+      const friendId = data.fromUser === "me" ? data.to : data.fromUser;
+      setMessages((prev) => ({
+        ...prev,
+        [friendId]: [...(prev[friendId] || []), data],
+      }));
+    });
+
+    // Update online users
+    socket.on("userOnline", (users) => setOnlineUsers(users));
+    socket.on("userOffline", (username) =>
+      setOnlineUsers((prev) => prev.filter((u) => u !== username))
+    );
+
+    return () => socket.disconnect();
+  }, []);
+
+  // Fetch friends
   useEffect(() => {
     dispatch(fetchFriends());
   }, [dispatch]);
 
-  // Filter friends based on search input
+  // Filter friends
   const filteredFriends = friends.filter((f) =>
     f.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Send a message
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!selectedFriend || (!newMessage.trim() && !imageFile)) return;
+  // Emoji
+  const handleEmojiClick = (emojiData) =>
+    setNewMessage((prev) => prev + emojiData.emoji);
 
-    const newMsg = {
-      sender: "me",
-      text: newMessage,
-      image: imageFile ? URL.createObjectURL(imageFile) : null,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
-
-    const replyMsg = {
-      sender: "friend",
-      text: "Got your message! 👍",
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
-
-    setMessages((prev) => ({
-      ...prev,
-      [selectedFriend.id]: [...(prev[selectedFriend.id] || []), newMsg, replyMsg],
-    }));
-
-    setNewMessage("");
-    setImageFile(null);
-    setShowEmojiPicker(false);
-  };
-
-  const handleEmojiClick = (emojiData) => setNewMessage((prev) => prev + emojiData.emoji);
-  const handleImageChange = (e) => e.target.files[0] && setImageFile(e.target.files[0]);
+  // Image
+  const handleImageChange = (e) =>
+    e.target.files[0] && setImageFile(e.target.files[0]);
   const removeImage = () => setImageFile(null);
 
   if (loading) return <p>Loading friends...</p>;
@@ -74,21 +81,24 @@ const Friends = () => {
         setSelectedFriend={setSelectedFriend}
         search={search}
         setSearch={setSearch}
+        onlineUsers={onlineUsers} // pass online users
       />
+
       {selectedFriend && (
         <ChatPanel
           selectedFriend={selectedFriend}
           setSelectedFriend={setSelectedFriend}
           messages={messages}
+          setMessages={setMessages}
           newMessage={newMessage}
           setNewMessage={setNewMessage}
-          handleSendMessage={handleSendMessage}
           showEmojiPicker={showEmojiPicker}
           setShowEmojiPicker={setShowEmojiPicker}
           handleEmojiClick={handleEmojiClick}
           handleImageChange={handleImageChange}
           imageFile={imageFile}
           removeImage={removeImage}
+          socket={socketRef.current}
         />
       )}
     </div>

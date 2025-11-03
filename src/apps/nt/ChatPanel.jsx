@@ -6,21 +6,65 @@ const ChatPanel = ({
   selectedFriend,
   setSelectedFriend,
   messages,
+  setMessages,
   newMessage,
   setNewMessage,
-  handleSendMessage,
   showEmojiPicker,
   setShowEmojiPicker,
   handleEmojiClick,
   handleImageChange,
   imageFile,
   removeImage,
+  socket,
 }) => {
   const chatEndRef = useRef(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, selectedFriend]);
+
+  // Receive private messages
+  useEffect(() => {
+    if (!socket) return;
+
+    const receiveHandler = (data) => {
+      // only handle messages from or to the selected friend
+      if (data.fromUser === selectedFriend.username || data.toUser === selectedFriend.username) {
+        setMessages((prev) => ({
+          ...prev,
+          [selectedFriend.username]: [...(prev[selectedFriend.username] || []), data],
+        }));
+      }
+    };
+
+    socket.on("receiveMessage", receiveHandler);
+    return () => socket.off("receiveMessage", receiveHandler);
+  }, [socket, selectedFriend, setMessages]);
+
+  const sendMessage = (e) => {
+    e?.preventDefault();
+    if (!newMessage.trim() && !imageFile) return;
+    if (!socket) return;
+
+    const msg = {
+      fromUser: sessionStorage.getItem("userName"), // sender
+      to: selectedFriend.name,             // receiver
+      text: newMessage,
+      image: imageFile ? URL.createObjectURL(imageFile) : null,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+
+    socket.emit("sendMessage", msg);
+
+    // Add to local state
+    setMessages((prev) => ({
+      ...prev,
+      [selectedFriend.username]: [...(prev[selectedFriend.username] || []), msg],
+    }));
+
+    setNewMessage("");
+    if (imageFile) removeImage();
+  };
 
   return (
     <div className="chat-panel">
@@ -43,13 +87,13 @@ const ChatPanel = ({
       </div>
 
       <div className="chat-messages">
-        {(messages[selectedFriend.id] || []).map((msg, i) => (
+        {(messages[selectedFriend.username] || []).map((msg, i) => (
           <div key={i} className="message-container">
-            <div className={`message ${msg.sender === "me" ? "sent" : "received"}`}>
+            <div className={`message ${msg.fromUser === sessionStorage.getItem("userName") ? "sent" : "received"}`}>
               {msg.text}
               {msg.image && <img src={msg.image} alt="sent" className="message-image" />}
             </div>
-            <span className={`message-time ${msg.sender === "me" ? "sent-time" : "received-time"}`}>
+            <span className={`message-time ${msg.fromUser === sessionStorage.getItem("userName") ? "sent-time" : "received-time"}`}>
               {msg.time}
             </span>
           </div>
@@ -57,7 +101,7 @@ const ChatPanel = ({
         <div ref={chatEndRef}></div>
       </div>
 
-      <form className="chat-input" onSubmit={handleSendMessage}>
+      <form className="chat-input" onSubmit={sendMessage}>
         <button type="button" className="emoji-btn" onClick={() => setShowEmojiPicker((prev) => !prev)}>
           <Smile size={22} />
         </button>

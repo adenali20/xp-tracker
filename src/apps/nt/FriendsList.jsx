@@ -1,6 +1,6 @@
 import React from "react";
 
-const FriendsList = ({ friends, filteredFriends, selectedFriend, setSelectedFriend, search, setSearch }) => {
+const FriendsList = ({ filteredFriends, selectedFriend, setSelectedFriend, search, setSearch }) => {
   return (
     <div className={`friends-list ${selectedFriend ? "hidden-mobile" : ""}`}>
       <h2>Friends</h2>
@@ -12,23 +12,27 @@ const FriendsList = ({ friends, filteredFriends, selectedFriend, setSelectedFrie
         className="search-input"
       />
       <div className="friends-scroll">
-        {filteredFriends.map((friend) => (
-          <div
-            key={friend.id}
-            className={`friend-item ${selectedFriend?.id === friend.id ? "selected" : ""}`}
-            onClick={() => setSelectedFriend(friend)}
-          >
-            <div className="friend-avatar">
-              <span className={`status-dot ${friend.online ? "online" : "offline"}`}></span>
+        {filteredFriends.length > 0 ? (
+          filteredFriends.map((friend) => (
+            <div
+              key={friend.id}
+              className={`friend-item ${selectedFriend?.id === friend.id ? "selected" : ""}`}
+              onClick={() => setSelectedFriend(friend)}
+            >
+              <div className="friend-avatar">
+                <span className={`status-dot ${friend.online ? "online" : "offline"}`}></span>
+              </div>
+              <div className="friend-info">
+                <p className="name">{friend.name}</p>
+                <p className="status">
+                  {friend.online ? "Online 🟢" : `Last seen ⏰ ${friend.lastSeen || "unknown"}`}
+                </p>
+              </div>
             </div>
-            <div className="friend-info">
-              <p className="name">{friend.name}</p>
-              <p className="status">
-                {friend.online ? "Online 🟢" : `Last seen ⏰ ${friend.lastSeen}`}
-              </p>
-            </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p style={{ padding: "1rem" }}>No friends found</p>
+        )}
       </div>
     </div>
   );
