@@ -1,6 +1,13 @@
 import React from "react";
 
-const FriendsList = ({ filteredFriends, selectedFriend, setSelectedFriend, search, setSearch }) => {
+const FriendsList = ({
+  filteredFriends,
+  selectedFriend,
+  setSelectedFriend,
+  search,
+  setSearch,
+  onlineUsers,
+}) => {
   return (
     <div className={`friends-list ${selectedFriend ? "hidden-mobile" : ""}`}>
       <h2>Friends</h2>
@@ -13,23 +20,32 @@ const FriendsList = ({ filteredFriends, selectedFriend, setSelectedFriend, searc
       />
       <div className="friends-scroll">
         {filteredFriends.length > 0 ? (
-          filteredFriends.map((friend) => (
-            <div
-              key={friend.id}
-              className={`friend-item ${selectedFriend?.id === friend.id ? "selected" : ""}`}
-              onClick={() => setSelectedFriend(friend)}
-            >
-              <div className="friend-avatar">
-                <span className={`status-dot ${friend.online ? "online" : "offline"}`}></span>
+          filteredFriends.map((friend) => {
+            const isOnline = onlineUsers.includes(friend.username);
+            return (
+              <div
+                key={friend.id}
+                className={`friend-item ${
+                  selectedFriend?.id === friend.id ? "selected" : ""
+                }`}
+                onClick={() => setSelectedFriend(friend)}
+              >
+                <div className="friend-avatar">
+                  <span
+                    className={`status-dot ${isOnline ? "online" : "offline"}`}
+                  ></span>
+                </div>
+                <div className="friend-info">
+                  <p className="name">{friend.name}</p>
+                  <p className="status">
+                    {isOnline
+                      ? "Online 🟢"
+                      : `Last seen ⏰ ${friend.lastSeen || "unknown"}`}
+                  </p>
+                </div>
               </div>
-              <div className="friend-info">
-                <p className="name">{friend.name}</p>
-                <p className="status">
-                  {friend.online ? "Online 🟢" : `Last seen ⏰ ${friend.lastSeen || "unknown"}`}
-                </p>
-              </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           <p style={{ padding: "1rem" }}>No friends found</p>
         )}

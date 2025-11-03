@@ -1,12 +1,13 @@
 import React, { useRef, useEffect } from "react";
 import { Video, Phone, Smile, ArrowLeft, Image } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
+import { useDispatch } from "react-redux";
+import { addMessage } from "../../redux/reducers/messagesSlice";
 
 const ChatPanel = ({
   selectedFriend,
   setSelectedFriend,
   messages,
-  setMessages,
   newMessage,
   setNewMessage,
   showEmojiPicker,
@@ -18,28 +19,19 @@ const ChatPanel = ({
   socket,
 }) => {
   const chatEndRef = useRef(null);
+  const dispatch = useDispatch();
+  const currentUser = sessionStorage.getItem("userName");
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, selectedFriend]);
 
-  // Receive private messages
-  useEffect(() => {
-    if (!socket) return;
-
-    const receiveHandler = (data) => {
-      // only handle messages from or to the selected friend
-      if (data.fromUser === selectedFriend.username || data.toUser === selectedFriend.username) {
-        setMessages((prev) => ({
-          ...prev,
-          [selectedFriend.username]: [...(prev[selectedFriend.username] || []), data],
-        }));
-      }
-    };
-
-    socket.on("receiveMessage", receiveHandler);
-    return () => socket.off("receiveMessage", receiveHandler);
-  }, [socket, selectedFriend, setMessages]);
+  // Filter messages for selected friend
+  const chatMessages = messages.filter(
+    (msg) =>
+      (msg.fromUser === currentUser && msg.to === selectedFriend.name) ||
+      (msg.fromUser === selectedFriend.name && msg.to === currentUser)
+  );
 
   const sendMessage = (e) => {
     e?.preventDefault();
@@ -47,20 +39,18 @@ const ChatPanel = ({
     if (!socket) return;
 
     const msg = {
-      fromUser: sessionStorage.getItem("userName"), // sender
-      to: selectedFriend.name,             // receiver
+      fromUser: currentUser,
+      to: selectedFriend.name,
       text: newMessage,
       image: imageFile ? URL.createObjectURL(imageFile) : null,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      time: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     };
 
     socket.emit("sendMessage", msg);
-
-    // Add to local state
-    setMessages((prev) => ({
-      ...prev,
-      [selectedFriend.username]: [...(prev[selectedFriend.username] || []), msg],
-    }));
+    dispatch(addMessage(msg));
 
     setNewMessage("");
     if (imageFile) removeImage();
@@ -71,13 +61,18 @@ const ChatPanel = ({
       <div className="chat-header">
         <div className="chat-header-left">
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <button className="back-btn mobile-only" onClick={() => setSelectedFriend(null)}>
+            <button
+              className="back-btn mobile-only"
+              onClick={() => setSelectedFriend(null)}
+            >
               <ArrowLeft size={20} />
             </button>
             <p className="name">{selectedFriend.name}</p>
           </div>
           <p className="status">
-            {selectedFriend.online ? "Online 🟢" : `Last seen ⏰ ${selectedFriend.lastSeen}`}
+            {selectedFriend.online
+              ? "Online 🟢"
+              : `Last seen ⏰ ${selectedFriend.lastSeen}`}
           </p>
         </div>
         <div className="actions">
@@ -87,13 +82,23 @@ const ChatPanel = ({
       </div>
 
       <div className="chat-messages">
-        {(messages[selectedFriend.username] || []).map((msg, i) => (
+        {chatMessages.map((msg, i) => (
           <div key={i} className="message-container">
-            <div className={`message ${msg.fromUser === sessionStorage.getItem("userName") ? "sent" : "received"}`}>
+            <div
+              className={`message ${
+                msg.fromUser === currentUser ? "sent" : "received"
+              }`}
+            >
               {msg.text}
-              {msg.image && <img src={msg.image} alt="sent" className="message-image" />}
+              {msg.image && (
+                <img src={msg.image} alt="sent" className="message-image" />
+              )}
             </div>
-            <span className={`message-time ${msg.fromUser === sessionStorage.getItem("userName") ? "sent-time" : "received-time"}`}>
+            <span
+              className={`message-time ${
+                msg.fromUser === currentUser ? "sent-time" : "received-time"
+              }`}
+            >
               {msg.time}
             </span>
           </div>
@@ -102,7 +107,11 @@ const ChatPanel = ({
       </div>
 
       <form className="chat-input" onSubmit={sendMessage}>
-        <button type="button" className="emoji-btn" onClick={() => setShowEmojiPicker((prev) => !prev)}>
+        <button
+          type="button"
+          className="emoji-btn"
+          onClick={() => setShowEmojiPicker((prev) => !prev)}
+        >
           <Smile size={22} />
         </button>
         <input
@@ -114,7 +123,12 @@ const ChatPanel = ({
         <label htmlFor="image-upload" style={{ cursor: "pointer" }}>
           <Image size={22} />
         </label>
-        <input type="file" id="image-upload" accept="image/*" onChange={handleImageChange} />
+        <input
+          type="file"
+          id="image-upload"
+          accept="image/*"
+          onChange={handleImageChange}
+        />
         <button type="submit">Send</button>
       </form>
 
@@ -129,7 +143,12 @@ const ChatPanel = ({
         <div className="emoji-popup">
           <div className="emoji-header">
             <span>Choose Emoji 😄</span>
-            <button className="emoji-cancel-btn" onClick={() => setShowEmojiPicker(false)}>❌</button>
+            <button
+              className="emoji-cancel-btn"
+              onClick={() => setShowEmojiPicker(false)}
+            >
+              ❌
+            </button>
           </div>
           <EmojiPicker onEmojiClick={handleEmojiClick} />
         </div>

@@ -3,25 +3,20 @@ import { createSlice } from "@reduxjs/toolkit";
 const messagesSlice = createSlice({
   name: "messages",
   initialState: {
-    byUser: {}, // { friendUsername: [messages...] }
+    list: [], // flat array of all messages
   },
   reducers: {
-    addMessage: (state, action) => {
-      const { friend, message } = action.payload;
-      if (!state.byUser[friend]) {
-        state.byUser[friend] = [];
-      }
-      state.byUser[friend].push(message);
-    },
     setMessages: (state, action) => {
-      const { friend, messages } = action.payload;
-      state.byUser[friend] = messages;
+      state.list = action.payload; // set all messages
+    },
+    addMessage: (state, action) => {
+      state.list.push(action.payload); // add a single message
     },
     clearMessages: (state) => {
-      state.byUser = {};
+      state.list = [];
     },
   },
 });
 
-export const { addMessage, setMessages, clearMessages } = messagesSlice.actions;
+export const { setMessages, addMessage, clearMessages } = messagesSlice.actions;
 export default messagesSlice.reducer;
