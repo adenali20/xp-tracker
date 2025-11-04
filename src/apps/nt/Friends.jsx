@@ -25,7 +25,10 @@ const Friends = () => {
     const token = sessionStorage.getItem("jwtToken");
     if (!token) return;
 
-    const socket = io(SOCKET_URL, { auth: { token } });
+    const socket = io("wss://dev.adenali.com/socket.io", {
+      auth: { token },
+      transports: ["websocket"], // force WebSocket
+    });
     socketRef.current = socket;
 
     socket.on("receiveMessage", (msg) => setMessages((prev) => [...prev, msg]));
