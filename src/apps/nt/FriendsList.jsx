@@ -1,13 +1,6 @@
 import React from "react";
 
-const FriendsList = ({
-  filteredFriends,
-  selectedFriend,
-  setSelectedFriend,
-  search,
-  setSearch,
-  onlineUsers,
-}) => {
+const FriendsList = ({ filteredFriends, selectedFriend, setSelectedFriend, search, setSearch, onlineUsers }) => {
   return (
     <div className={`friends-list ${selectedFriend ? "hidden-mobile" : ""}`}>
       <h2>Friends</h2>
@@ -25,23 +18,15 @@ const FriendsList = ({
             return (
               <div
                 key={friend.id}
-                className={`friend-item ${
-                  selectedFriend?.id === friend.id ? "selected" : ""
-                }`}
+                className={`friend-item ${selectedFriend?.id === friend.id ? "selected" : ""}`}
                 onClick={() => setSelectedFriend(friend)}
               >
                 <div className="friend-avatar">
-                  <span
-                    className={`status-dot ${isOnline ? "online" : "offline"}`}
-                  ></span>
+                  <span className={`status-dot ${isOnline ? "online" : "offline"}`}></span>
                 </div>
                 <div className="friend-info">
                   <p className="name">{friend.name}</p>
-                  <p className="status">
-                    {isOnline
-                      ? "Online 🟢"
-                      : `Last seen ⏰ ${friend.lastSeen || "unknown"}`}
-                  </p>
+                  <p className="status">{isOnline ? "Online 🟢" : `Last seen ⏰ ${friend.lastSeen || "unknown"}`}</p>
                 </div>
               </div>
             );
