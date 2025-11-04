@@ -7,7 +7,7 @@ import { fetchFriends } from "../../redux/reducers/friendsSlice";
 import io from "socket.io-client";
 import "./Friends.css";
 
-const SOCKET_URL = "https://dev.adenali.com/socket.io"; // HTTPS via Ingress
+const SOCKET_URL = "wss://dev.adenali.com/socket.io"; // HTTPS via Ingress
 
 const Friends = () => {
   const dispatch = useDispatch();
@@ -25,7 +25,7 @@ const Friends = () => {
     const token = sessionStorage.getItem("jwtToken");
     if (!token) return;
 
-    const socket = io("wss://dev.adenali.com/socket.io", {
+    const socket = io(SOCKET_URL, {
       auth: { token },
       transports: ["websocket"], // force WebSocket
     });
