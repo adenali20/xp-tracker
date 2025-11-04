@@ -7,7 +7,7 @@ import { fetchFriends } from "../../redux/reducers/friendsSlice";
 import io from "socket.io-client";
 import "./Friends.css";
 
-const SOCKET_URL = "http://nt-server-srv:3001";
+const SOCKET_URL = "https://dev.adenali.com/socket.io"; // HTTPS via Ingress
 
 const Friends = () => {
   const dispatch = useDispatch();
