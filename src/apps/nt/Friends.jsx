@@ -25,8 +25,9 @@ const Friends = () => {
     const token = sessionStorage.getItem("jwtToken");
     if (!token) return;
 
-    const socket = io("ws://dev.adenali.com/socket.io", {
-      transports: ["websocket"]
+    const socket = io("http://dev.adenali.com/socket.io", {
+      transports: ["websocket"],
+      auth: { token } // if your server expects JWT
     });
 
     socketRef.current = socket;
