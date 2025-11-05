@@ -28,17 +28,30 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
     };
 
     socket.on("callAnswered", async ({ answer }) => {
-      if (!pcRef.current) return;
-      await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+      try {
+        if (!pcRef.current) return;
+        await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+      } catch (err) {
+        console.error("Error setting remote description:", err);
+      }
     });
 
     socket.on("iceCandidate", async ({ candidate }) => {
-      if (!pcRef.current) return;
-      await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+      try {
+        if (!pcRef.current) return;
+        await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (error) {
+        console.error("Error adding ICE candidate:", error);
+      }
+    });
+
+    // 🔔 Listen for remote hangup
+    socket.on("callEnded", () => {
+      console.log("Remote user ended call");
+      endCallLocal();
     });
   };
 
-  // Handle outgoing call
   const startCall = async () => {
     if (!socket || !selectedFriend || inCall) return;
 
@@ -59,7 +72,7 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
     setInCall(true);
   };
 
-  // Handle incoming call (triggered when accept button clicked)
+  // Handle incoming call (accept)
   useEffect(() => {
     if (!incomingCallOffer || inCall) return;
 
@@ -81,7 +94,8 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
     acceptCall();
   }, [incomingCallOffer]);
 
-  const cancelCall = () => {
+  // 🔴 Local cleanup helper
+  const endCallLocal = () => {
     if (pcRef.current) {
       pcRef.current.close();
       pcRef.current = null;
@@ -97,18 +111,27 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
     setInCall(false);
   };
 
+  // 🔴 Triggered by user clicking "End Call"
+  const cancelCall = () => {
+    socket.emit("endCall", { to: selectedFriend.name });
+    endCallLocal();
+  };
+
   return (
-    <div className="video-chat-panel">
-      <div>
-        <video ref={localVideoRef} autoPlay muted style={{ width: "200px" }} />
-        <video ref={remoteVideoRef} autoPlay style={{ width: "200px" }} />
+    <div className="video-chat-panel" style={{ textAlign: "center", padding: "10px" }}>
+      <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
+        <video ref={localVideoRef} autoPlay muted style={{ width: "200px", border: "1px solid gray" }} />
+        <video ref={remoteVideoRef} autoPlay style={{ width: "200px", border: "1px solid gray" }} />
       </div>
+
       {inCall ? (
-        <button onClick={cancelCall} style={{ backgroundColor: "red", color: "white" }}>
+        <button onClick={cancelCall} style={{ marginTop: "10px", backgroundColor: "red", color: "white" }}>
           End Call
         </button>
       ) : (
-        <button onClick={startCall}>Call {selectedFriend.name}</button>
+        <button onClick={startCall} style={{ marginTop: "10px" }}>
+          Call {selectedFriend.name}
+        </button>
       )}
     </div>
   );
