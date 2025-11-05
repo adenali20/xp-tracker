@@ -23,7 +23,7 @@ const VideoChatPanel = ({ socket, selectedFriend }) => {
       pc.onicecandidate = (event) => {
         if (event.candidate) {
           socket.emit("iceCandidate", {
-            to: selectedFriend.username,
+            to: selectedFriend.name,
             candidate: event.candidate,
           });
         }
@@ -31,6 +31,10 @@ const VideoChatPanel = ({ socket, selectedFriend }) => {
 
       // Listen for incoming call
       socket.on("incomingCall", async ({ from, offer }) => {
+        console.log("#Incoming call");
+        console.log("From:", from);
+        console.log("Offer:", offer);
+
         if (!pcRef.current) return;
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
         const answer = await pcRef.current.createAnswer();
@@ -58,7 +62,7 @@ const VideoChatPanel = ({ socket, selectedFriend }) => {
     const offer = await pcRef.current.createOffer();
     await pcRef.current.setLocalDescription(offer);
     socket.emit("callUser", {
-      to: selectedFriend.username,
+      to: selectedFriend.name,
       offer,
       from: sessionStorage.getItem("userName"),
     });

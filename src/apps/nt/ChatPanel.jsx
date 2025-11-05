@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import { Video, Phone, Smile, ArrowLeft, Image } from "lucide-react";
+import { Video, Phone, Smile, ArrowLeft, Image, X } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { useDispatch } from "react-redux";
 import { addMessage } from "../../redux/reducers/messagesSlice";
@@ -17,7 +17,8 @@ const ChatPanel = ({
   imageFile,
   removeImage,
   socket,
-  onVideoCallClick, // <-- callback for starting video call
+  onVideoCallClick, // callback for starting video call
+  onVideoCallCancel, // callback for canceling video call
 }) => {
   const chatEndRef = useRef(null);
   const dispatch = useDispatch();
@@ -27,7 +28,6 @@ const ChatPanel = ({
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, selectedFriend]);
 
-  // Filter messages for the selected friend
   const chatMessages = messages.filter(
     (msg) =>
       (msg.fromUser === currentUser && msg.to === selectedFriend.name) ||
@@ -77,7 +77,6 @@ const ChatPanel = ({
           </p>
         </div>
 
-        {/* Actions: video starts only on click */}
         <div className="actions">
           <button
             type="button"
@@ -86,6 +85,15 @@ const ChatPanel = ({
           >
             <Video className="chat-icon" />
           </button>
+          {onVideoCallCancel && (
+            <button
+              type="button"
+              className="chat-icon-btn"
+              onClick={onVideoCallCancel}
+            >
+              <X className="chat-icon" />
+            </button>
+          )}
           <Phone className="chat-icon" />
         </div>
       </div>
