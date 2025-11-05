@@ -7,13 +7,13 @@ import { fetchFriends } from "../../redux/reducers/friendsSlice";
 import io from "socket.io-client";
 import "./Friends.css";
 
-const SOCKET_URL = "http://20.87.34.159:31001";
+const SOCKET_URL = "http://20.87.34.159:30001";
 
 const Friends = () => {
   const dispatch = useDispatch();
   const { friends = [], loading, error } = useSelector((state) => state.friends) || {};
   const [selectedFriend, setSelectedFriend] = useState(null);
-  const [search, setSearch] = useState("");
+  const [showVideoChat, setShowVideoChat] = useState(false); // controls video panel
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [imageFile, setImageFile] = useState(null);
@@ -44,12 +44,13 @@ const Friends = () => {
   useEffect(() => { dispatch(fetchFriends()); }, [dispatch]);
 
   const filteredFriends = friends.filter((f) =>
-    f.name.toLowerCase().includes(search.toLowerCase())
+    f.name.toLowerCase().includes("")
   );
 
-  const handleEmojiClick = (emojiData) => setNewMessage((prev) => prev + emojiData.emoji);
-  const handleImageChange = (e) => e.target.files[0] && setImageFile(e.target.files[0]);
-  const removeImage = () => setImageFile(null);
+  // Trigger video chat panel
+  const handleVideoCallClick = () => {
+    setShowVideoChat(true);
+  };
 
   if (loading) return <p>Loading friends...</p>;
   if (error) return <p>{error}</p>;
@@ -60,9 +61,10 @@ const Friends = () => {
         friends={friends}
         filteredFriends={filteredFriends}
         selectedFriend={selectedFriend}
-        setSelectedFriend={setSelectedFriend}
-        search={search}
-        setSearch={setSearch}
+        setSelectedFriend={(friend) => {
+          setSelectedFriend(friend);
+          setShowVideoChat(false); // reset video chat if changing friend
+        }}
         onlineUsers={onlineUsers}
       />
 
@@ -81,13 +83,20 @@ const Friends = () => {
             setNewMessage={setNewMessage}
             showEmojiPicker={showEmojiPicker}
             setShowEmojiPicker={setShowEmojiPicker}
-            handleEmojiClick={handleEmojiClick}
-            handleImageChange={handleImageChange}
+            handleImageChange={(file) => setImageFile(file)}
             imageFile={imageFile}
-            removeImage={removeImage}
+            removeImage={() => setImageFile(null)}
             socket={socketRef.current}
+            onVideoCallClick={handleVideoCallClick} // pass the handler
           />
-          <VideoChatPanel socket={socketRef.current} selectedFriend={selectedFriend} />
+
+          {/* Only mount VideoChatPanel when user clicks video icon */}
+          {showVideoChat && (
+            <VideoChatPanel
+              socket={socketRef.current}
+              selectedFriend={selectedFriend}
+            />
+          )}
         </>
       )}
     </div>

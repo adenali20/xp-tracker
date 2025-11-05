@@ -1,85 +1,60 @@
-import React, { useRef, useEffect, useMemo } from "react";
+import React, { useRef, useState } from "react";
 
 const VideoChatPanel = ({ socket, selectedFriend }) => {
   const localVideoRef = useRef();
   const remoteVideoRef = useRef();
   const pcRef = useRef(null);
+  const [inCall, setInCall] = useState(false);
 
-  // ✅ Stable ICE servers reference
-  const servers = useMemo(
-    () => ({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] }),
-    []
-  );
+  const servers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-  useEffect(() => {
-    if (!socket || !selectedFriend) return;
+  const startCall = async () => {
+    if (!socket || !selectedFriend || inCall) return;
 
-    // Clean up old connection if exists
-    if (pcRef.current) {
-      pcRef.current.close();
-      pcRef.current = null;
+    // Create peer connection if doesn't exist
+    if (!pcRef.current) {
+      const pc = new RTCPeerConnection(servers);
+      pcRef.current = pc;
+
+      pc.ontrack = (event) => {
+        remoteVideoRef.current.srcObject = event.streams[0];
+      };
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          socket.emit("iceCandidate", {
+            to: selectedFriend.username,
+            candidate: event.candidate,
+          });
+        }
+      };
+
+      // Listen for incoming call
+      socket.on("incomingCall", async ({ from, offer }) => {
+        if (!pcRef.current) return;
+        await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await pcRef.current.createAnswer();
+        await pcRef.current.setLocalDescription(answer);
+        socket.emit("answerCall", { to: from, answer });
+      });
+
+      socket.on("callAnswered", async ({ answer }) => {
+        if (!pcRef.current) return;
+        await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+      });
+
+      socket.on("iceCandidate", async ({ candidate }) => {
+        if (!pcRef.current) return;
+        await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+      });
     }
 
-    const pc = new RTCPeerConnection(servers);
-    pcRef.current = pc;
+    // Request media only when call starts
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    localVideoRef.current.srcObject = stream;
+    stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
 
-    // Add local media stream
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
-      if (!pcRef.current) return;
-      localVideoRef.current.srcObject = stream;
-      stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
-    });
-
-    pc.ontrack = (event) => {
-      remoteVideoRef.current.srcObject = event.streams[0];
-    };
-
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.emit("iceCandidate", {
-          to: selectedFriend.username,
-          candidate: event.candidate,
-        });
-      }
-    };
-
-    // Socket event handlers
-    const handleIncomingCall = async ({ from, offer }) => {
-      if (!pcRef.current) return;
-      await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await pcRef.current.createAnswer();
-      await pcRef.current.setLocalDescription(answer);
-      socket.emit("answerCall", { to: from, answer });
-    };
-
-    const handleCallAnswered = async ({ answer }) => {
-      if (!pcRef.current) return;
-      await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
-    };
-
-    const handleIceCandidate = async ({ candidate }) => {
-      if (!pcRef.current) return;
-      await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-    };
-
-    socket.on("incomingCall", handleIncomingCall);
-    socket.on("callAnswered", handleCallAnswered);
-    socket.on("iceCandidate", handleIceCandidate);
-
-    // Cleanup
-    return () => {
-      if (pcRef.current) {
-        pcRef.current.close();
-        pcRef.current = null;
-      }
-      socket.off("incomingCall", handleIncomingCall);
-      socket.off("callAnswered", handleCallAnswered);
-      socket.off("iceCandidate", handleIceCandidate);
-    };
-  }, [socket, selectedFriend, servers]);
-
-  const callUser = async () => {
-    if (!pcRef.current) return;
+    // Create offer and send
     const offer = await pcRef.current.createOffer();
     await pcRef.current.setLocalDescription(offer);
     socket.emit("callUser", {
@@ -87,6 +62,24 @@ const VideoChatPanel = ({ socket, selectedFriend }) => {
       offer,
       from: sessionStorage.getItem("userName"),
     });
+
+    setInCall(true);
+  };
+
+  const cancelCall = () => {
+    if (pcRef.current) {
+      pcRef.current.close();
+      pcRef.current = null;
+    }
+    if (localVideoRef.current?.srcObject) {
+      localVideoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+      localVideoRef.current.srcObject = null;
+    }
+    if (remoteVideoRef.current?.srcObject) {
+      remoteVideoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+      remoteVideoRef.current.srcObject = null;
+    }
+    setInCall(false);
   };
 
   return (
@@ -95,7 +88,13 @@ const VideoChatPanel = ({ socket, selectedFriend }) => {
         <video ref={localVideoRef} autoPlay muted style={{ width: "200px" }} />
         <video ref={remoteVideoRef} autoPlay style={{ width: "200px" }} />
       </div>
-      <button onClick={callUser}>Call {selectedFriend.name}</button>
+      {inCall ? (
+        <button onClick={cancelCall} style={{ backgroundColor: "red", color: "white" }}>
+          End Call
+        </button>
+      ) : (
+        <button onClick={startCall}>Call {selectedFriend.name}</button>
+      )}
     </div>
   );
 };

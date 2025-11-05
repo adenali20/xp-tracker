@@ -17,6 +17,7 @@ const ChatPanel = ({
   imageFile,
   removeImage,
   socket,
+  onVideoCallClick, // <-- callback for starting video call
 }) => {
   const chatEndRef = useRef(null);
   const dispatch = useDispatch();
@@ -26,7 +27,7 @@ const ChatPanel = ({
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, selectedFriend]);
 
-  // Filter messages for selected friend
+  // Filter messages for the selected friend
   const chatMessages = messages.filter(
     (msg) =>
       (msg.fromUser === currentUser && msg.to === selectedFriend.name) ||
@@ -75,8 +76,16 @@ const ChatPanel = ({
               : `Last seen ⏰ ${selectedFriend.lastSeen}`}
           </p>
         </div>
+
+        {/* Actions: video starts only on click */}
         <div className="actions">
-          <Video className="chat-icon" />
+          <button
+            type="button"
+            className="chat-icon-btn"
+            onClick={onVideoCallClick}
+          >
+            <Video className="chat-icon" />
+          </button>
           <Phone className="chat-icon" />
         </div>
       </div>
