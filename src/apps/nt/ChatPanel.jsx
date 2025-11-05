@@ -17,8 +17,8 @@ const ChatPanel = ({
   imageFile,
   removeImage,
   socket,
-  onVideoCallClick, // callback for starting video call
-  onVideoCallCancel, // callback for canceling video call
+  onVideoCallClick, // start call
+  onVideoCallCancel, // cancel call
 }) => {
   const chatEndRef = useRef(null);
   const dispatch = useDispatch();
@@ -44,10 +44,7 @@ const ChatPanel = ({
       to: selectedFriend.name,
       text: newMessage,
       image: imageFile ? URL.createObjectURL(imageFile) : null,
-      time: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
 
     socket.emit("sendMessage", msg);
@@ -62,10 +59,7 @@ const ChatPanel = ({
       <div className="chat-header">
         <div className="chat-header-left">
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <button
-              className="back-btn mobile-only"
-              onClick={() => setSelectedFriend(null)}
-            >
+            <button className="back-btn mobile-only" onClick={() => setSelectedFriend(null)}>
               <ArrowLeft size={20} />
             </button>
             <p className="name">{selectedFriend.name}</p>
@@ -78,19 +72,11 @@ const ChatPanel = ({
         </div>
 
         <div className="actions">
-          <button
-            type="button"
-            className="chat-icon-btn"
-            onClick={onVideoCallClick}
-          >
+          <button type="button" className="chat-icon-btn" onClick={onVideoCallClick}>
             <Video className="chat-icon" />
           </button>
           {onVideoCallCancel && (
-            <button
-              type="button"
-              className="chat-icon-btn"
-              onClick={onVideoCallCancel}
-            >
+            <button type="button" className="chat-icon-btn" onClick={onVideoCallCancel}>
               <X className="chat-icon" />
             </button>
           )}
@@ -101,21 +87,11 @@ const ChatPanel = ({
       <div className="chat-messages">
         {chatMessages.map((msg, i) => (
           <div key={i} className="message-container">
-            <div
-              className={`message ${
-                msg.fromUser === currentUser ? "sent" : "received"
-              }`}
-            >
+            <div className={`message ${msg.fromUser === currentUser ? "sent" : "received"}`}>
               {msg.text}
-              {msg.image && (
-                <img src={msg.image} alt="sent" className="message-image" />
-              )}
+              {msg.image && <img src={msg.image} alt="sent" className="message-image" />}
             </div>
-            <span
-              className={`message-time ${
-                msg.fromUser === currentUser ? "sent-time" : "received-time"
-              }`}
-            >
+            <span className={`message-time ${msg.fromUser === currentUser ? "sent-time" : "received-time"}`}>
               {msg.time}
             </span>
           </div>
@@ -124,11 +100,7 @@ const ChatPanel = ({
       </div>
 
       <form className="chat-input" onSubmit={sendMessage}>
-        <button
-          type="button"
-          className="emoji-btn"
-          onClick={() => setShowEmojiPicker((prev) => !prev)}
-        >
+        <button type="button" className="emoji-btn" onClick={() => setShowEmojiPicker((prev) => !prev)}>
           <Smile size={22} />
         </button>
         <input
@@ -140,12 +112,7 @@ const ChatPanel = ({
         <label htmlFor="image-upload" style={{ cursor: "pointer" }}>
           <Image size={22} />
         </label>
-        <input
-          type="file"
-          id="image-upload"
-          accept="image/*"
-          onChange={handleImageChange}
-        />
+        <input type="file" id="image-upload" accept="image/*" onChange={handleImageChange} />
         <button type="submit">Send</button>
       </form>
 
@@ -160,10 +127,7 @@ const ChatPanel = ({
         <div className="emoji-popup">
           <div className="emoji-header">
             <span>Choose Emoji 😄</span>
-            <button
-              className="emoji-cancel-btn"
-              onClick={() => setShowEmojiPicker(false)}
-            >
+            <button className="emoji-cancel-btn" onClick={() => setShowEmojiPicker(false)}>
               ❌
             </button>
           </div>

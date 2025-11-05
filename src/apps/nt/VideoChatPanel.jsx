@@ -1,6 +1,6 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 
-const VideoChatPanel = ({ socket, selectedFriend }) => {
+const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
   const localVideoRef = useRef();
   const remoteVideoRef = useRef();
   const pcRef = useRef(null);
@@ -8,57 +8,46 @@ const VideoChatPanel = ({ socket, selectedFriend }) => {
 
   const servers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
+  const initPeerConnection = () => {
+    if (pcRef.current) return;
+
+    const pc = new RTCPeerConnection(servers);
+    pcRef.current = pc;
+
+    pc.ontrack = (event) => {
+      remoteVideoRef.current.srcObject = event.streams[0];
+    };
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit("iceCandidate", {
+          to: selectedFriend.name,
+          candidate: event.candidate,
+        });
+      }
+    };
+
+    socket.on("callAnswered", async ({ answer }) => {
+      if (!pcRef.current) return;
+      await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+    });
+
+    socket.on("iceCandidate", async ({ candidate }) => {
+      if (!pcRef.current) return;
+      await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+    });
+  };
+
+  // Handle outgoing call
   const startCall = async () => {
     if (!socket || !selectedFriend || inCall) return;
 
-    // Create peer connection if doesn't exist
-    if (!pcRef.current) {
-      const pc = new RTCPeerConnection(servers);
-      pcRef.current = pc;
+    initPeerConnection();
 
-      pc.ontrack = (event) => {
-        remoteVideoRef.current.srcObject = event.streams[0];
-      };
-
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.emit("iceCandidate", {
-            to: selectedFriend.name,
-            candidate: event.candidate,
-          });
-        }
-      };
-
-      // Listen for incoming call
-      socket.on("incomingCall", async ({ from, offer }) => {
-        console.log("#Incoming call");
-        console.log("From:", from);
-        console.log("Offer:", offer);
-
-        if (!pcRef.current) return;
-        await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await pcRef.current.createAnswer();
-        await pcRef.current.setLocalDescription(answer);
-        socket.emit("answerCall", { to: from, answer });
-      });
-
-      socket.on("callAnswered", async ({ answer }) => {
-        if (!pcRef.current) return;
-        await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
-      });
-
-      socket.on("iceCandidate", async ({ candidate }) => {
-        if (!pcRef.current) return;
-        await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-      });
-    }
-
-    // Request media only when call starts
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     localVideoRef.current.srcObject = stream;
     stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
 
-    // Create offer and send
     const offer = await pcRef.current.createOffer();
     await pcRef.current.setLocalDescription(offer);
     socket.emit("callUser", {
@@ -69,6 +58,28 @@ const VideoChatPanel = ({ socket, selectedFriend }) => {
 
     setInCall(true);
   };
+
+  // Handle incoming call (triggered when accept button clicked)
+  useEffect(() => {
+    if (!incomingCallOffer || inCall) return;
+
+    const acceptCall = async () => {
+      initPeerConnection();
+
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localVideoRef.current.srcObject = stream;
+      stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
+
+      await pcRef.current.setRemoteDescription(new RTCSessionDescription(incomingCallOffer));
+      const answer = await pcRef.current.createAnswer();
+      await pcRef.current.setLocalDescription(answer);
+      socket.emit("answerCall", { to: selectedFriend.name, answer });
+
+      setInCall(true);
+    };
+
+    acceptCall();
+  }, [incomingCallOffer]);
 
   const cancelCall = () => {
     if (pcRef.current) {

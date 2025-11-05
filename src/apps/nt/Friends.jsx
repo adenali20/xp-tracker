@@ -7,13 +7,15 @@ import { fetchFriends } from "../../redux/reducers/friendsSlice";
 import io from "socket.io-client";
 import "./Friends.css";
 
-const SOCKET_URL = "http://20.87.34.159:30001";
+const SOCKET_URL = "http://10.0.0.167:3001";
 
 const Friends = () => {
   const dispatch = useDispatch();
   const { friends = [], loading, error } = useSelector((state) => state.friends) || {};
   const [selectedFriend, setSelectedFriend] = useState(null);
-  const [showVideoChat, setShowVideoChat] = useState(false); // controls video panel
+  const [showVideoChat, setShowVideoChat] = useState(false);
+  const [incomingCallOffer, setIncomingCallOffer] = useState(null); // <-- new
+  const [incomingCaller, setIncomingCaller] = useState(null); // <-- who is calling
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [imageFile, setImageFile] = useState(null);
@@ -29,7 +31,6 @@ const Friends = () => {
       transports: ["websocket"],
       auth: { token },
     });
-
     socketRef.current = socket;
 
     socket.on("receiveMessage", (msg) => setMessages((prev) => [...prev, msg]));
@@ -38,8 +39,15 @@ const Friends = () => {
       setOnlineUsers((prev) => prev.filter((u) => u !== username))
     );
 
+    // Listen for incoming call
+    socket.on("incomingCall", ({ from, offer }) => {
+      setIncomingCaller(from);
+      setIncomingCallOffer(offer);
+      setSelectedFriend(friends.find(f => f.name === from) || { name: from }); // auto-select caller
+    });
+
     return () => socket.disconnect();
-  }, []);
+  }, [friends]);
 
   useEffect(() => { dispatch(fetchFriends()); }, [dispatch]);
 
@@ -47,9 +55,19 @@ const Friends = () => {
     f.name.toLowerCase().includes("")
   );
 
-  // Trigger video chat panel
   const handleVideoCallClick = () => {
     setShowVideoChat(true);
+    setIncomingCallOffer(null);
+    setIncomingCaller(null);
+  };
+
+  const handleIncomingCallAccept = () => {
+    setShowVideoChat(true);
+  };
+
+  const handleIncomingCallDecline = () => {
+    setIncomingCallOffer(null);
+    setIncomingCaller(null);
   };
 
   if (loading) return <p>Loading friends...</p>;
@@ -63,7 +81,9 @@ const Friends = () => {
         selectedFriend={selectedFriend}
         setSelectedFriend={(friend) => {
           setSelectedFriend(friend);
-          setShowVideoChat(false); // reset video chat if changing friend
+          setShowVideoChat(false);
+          setIncomingCallOffer(null);
+          setIncomingCaller(null);
         }}
         onlineUsers={onlineUsers}
       />
@@ -87,14 +107,24 @@ const Friends = () => {
             imageFile={imageFile}
             removeImage={() => setImageFile(null)}
             socket={socketRef.current}
-            onVideoCallClick={handleVideoCallClick} // pass the handler
+            onVideoCallClick={handleVideoCallClick}
           />
 
-          {/* Only mount VideoChatPanel when user clicks video icon */}
+          {/* Incoming Call Banner */}
+          {incomingCallOffer && !showVideoChat && (
+            <div className="incoming-call-banner">
+              <p>{incomingCaller} is calling...</p>
+              <button onClick={handleIncomingCallAccept}>Accept</button>
+              <button onClick={handleIncomingCallDecline}>Decline</button>
+            </div>
+          )}
+
+          {/* Video Chat Panel */}
           {showVideoChat && (
             <VideoChatPanel
               socket={socketRef.current}
               selectedFriend={selectedFriend}
+              incomingCallOffer={incomingCallOffer}
             />
           )}
         </>
