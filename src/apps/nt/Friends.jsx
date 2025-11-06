@@ -27,9 +27,10 @@ const Friends = () => {
     const token = sessionStorage.getItem("jwtToken");
     if (!token) return;
 
-    const socket = io('https://adenali.com', {
-      transports: ['websocket'],
-      secure: true
+    const socket = io("wss://adenali.com", {
+      path: "/socket.io",
+      transports: ["websocket"],
+      auth: { token },
     });
     socketRef.current = socket;
 
