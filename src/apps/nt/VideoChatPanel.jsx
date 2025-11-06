@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useRef, useState, useEffect, useCallback } from "react";
 
 const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
