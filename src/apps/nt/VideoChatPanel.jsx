@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 
 const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
   const localVideoRef = useRef();
@@ -8,7 +8,8 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
 
   const servers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-  const initPeerConnection = () => {
+  // 🔹 Initialize peer connection
+  const initPeerConnection = useCallback(() => {
     if (pcRef.current) return;
 
     const pc = new RTCPeerConnection(servers);
@@ -45,13 +46,13 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
       }
     });
 
-    // 🔔 Listen for remote hangup
     socket.on("callEnded", () => {
       console.log("Remote user ended call");
       endCallLocal();
     });
-  };
+  }, [socket, selectedFriend.name]);
 
+  // 🔹 Start outgoing call
   const startCall = async () => {
     if (!socket || !selectedFriend || inCall) return;
 
@@ -72,7 +73,7 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
     setInCall(true);
   };
 
-  // Handle incoming call (accept)
+  // 🔹 Handle incoming call
   useEffect(() => {
     if (!incomingCallOffer || inCall) return;
 
@@ -92,9 +93,9 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
     };
 
     acceptCall();
-  }, [incomingCallOffer]);
+  }, [incomingCallOffer, inCall, initPeerConnection, socket, selectedFriend.name]);
 
-  // 🔴 Local cleanup helper
+  // 🔹 End call locally
   const endCallLocal = () => {
     if (pcRef.current) {
       pcRef.current.close();
@@ -111,7 +112,7 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
     setInCall(false);
   };
 
-  // 🔴 Triggered by user clicking "End Call"
+  // 🔹 Cancel call (triggered by button)
   const cancelCall = () => {
     socket.emit("endCall", { to: selectedFriend.name });
     endCallLocal();
