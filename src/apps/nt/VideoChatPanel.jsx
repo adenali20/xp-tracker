@@ -9,6 +9,10 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
 
   const servers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
+  // Draggable state (window-based)
+  const [dragPos, setDragPos] = useState({ top: 20, left: 20 });
+  const dragRef = useRef({ dragging: false, offsetX: 0, offsetY: 0 });
+
   const initPeerConnection = useCallback(() => {
     if (pcRef.current) return;
     const pc = new RTCPeerConnection(servers);
@@ -17,9 +21,7 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
     pc.ontrack = (event) => {
       const [remoteStream] = event.streams;
       if (remoteVideoRef.current && remoteStream) {
-        if (remoteVideoRef.current.srcObject !== remoteStream) {
-          remoteVideoRef.current.srcObject = remoteStream;
-        }
+        remoteVideoRef.current.srcObject = remoteStream;
       }
     };
 
@@ -95,6 +97,37 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
     setInCall(false);
   };
 
+  const endCallLocal = () => {
+    stopCall();
+  };
+
+  // Draggable handlers
+  const handleMouseDown = (e) => {
+    dragRef.current.dragging = true;
+    const rect = localVideoRef.current.getBoundingClientRect();
+    dragRef.current.offsetX = e.clientX - rect.left;
+    dragRef.current.offsetY = e.clientY - rect.top;
+  };
+
+  const handleMouseMove = (e) => {
+    if (!dragRef.current.dragging) return;
+
+    let newLeft = e.clientX - dragRef.current.offsetX;
+    let newTop = e.clientY - dragRef.current.offsetY;
+
+    // Optionally, you can add screen boundaries
+    const winWidth = window.innerWidth - 200; // local video width
+    const winHeight = window.innerHeight - 140; // local video height
+    newLeft = Math.max(0, Math.min(newLeft, winWidth));
+    newTop = Math.max(0, Math.min(newTop, winHeight));
+
+    setDragPos({ left: newLeft, top: newTop });
+  };
+
+  const handleMouseUp = () => {
+    dragRef.current.dragging = false;
+  };
+
   const videoContainerStyle = {
     position: "relative",
     display: "flex",
@@ -116,22 +149,35 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
   };
 
   const localVideoStyle = {
-    position: "absolute",
-    bottom: "20px",
-    right: "20px",
+    position: "fixed", // now draggable anywhere on screen
     width: "200px",
     height: "140px",
     borderRadius: "8px",
     border: "2px solid white",
     objectFit: "cover",
-    zIndex: 10,
+    zIndex: 9999,
+    cursor: "move",
+    left: `${dragPos.left}px`,
+    top: `${dragPos.top}px`,
   };
 
   return (
-    <div className="video-chat-panel" style={{ textAlign: "center", padding: "10px" }}>
+    <div
+      className="video-chat-panel"
+      style={{ textAlign: "center", padding: "10px" }}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+    >
       <div style={videoContainerStyle}>
         <video ref={remoteVideoRef} autoPlay playsInline style={remoteVideoStyle} />
-        <video ref={localVideoRef} autoPlay muted playsInline style={localVideoStyle} />
+        <video
+          ref={localVideoRef}
+          autoPlay
+          muted
+          playsInline
+          style={localVideoStyle}
+          onMouseDown={handleMouseDown}
+        />
       </div>
 
       {inCall ? (
