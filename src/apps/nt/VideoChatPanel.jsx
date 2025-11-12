@@ -9,9 +9,57 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
 
   const servers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-  // Draggable local PiP
+  // ------------------ Draggable & Resizable PiP ------------------
   const [dragPos, setDragPos] = useState({ top: 20, left: 20 });
-  const dragRef = useRef({ dragging: false, offsetX: 0, offsetY: 0 });
+  const [pipSize, setPipSize] = useState({ width: 200, height: 140 });
+  const dragRef = useRef({ dragging: false, resizing: false, offsetX: 0, offsetY: 0 });
+
+  const handleMouseDown = (e) => {
+    dragRef.current.dragging = true;
+    const rect = localVideoRef.current.getBoundingClientRect();
+    dragRef.current.offsetX = e.clientX - rect.left;
+    dragRef.current.offsetY = e.clientY - rect.top;
+    e.stopPropagation();
+  };
+
+  const handleResizeMouseDown = (e) => {
+    dragRef.current.resizing = true;
+    dragRef.current.startX = e.clientX;
+    dragRef.current.startY = e.clientY;
+    dragRef.current.startWidth = pipSize.width;
+    dragRef.current.startHeight = pipSize.height;
+    e.stopPropagation();
+  };
+
+  const handleMouseMove = (e) => {
+    // Drag
+    if (dragRef.current.dragging) {
+      let newLeft = e.clientX - dragRef.current.offsetX;
+      let newTop = e.clientY - dragRef.current.offsetY;
+
+      const winWidth = window.innerWidth - pipSize.width;
+      const winHeight = window.innerHeight - pipSize.height;
+
+      newLeft = Math.max(0, Math.min(newLeft, winWidth));
+      newTop = Math.max(0, Math.min(newTop, winHeight));
+
+      setDragPos({ left: newLeft, top: newTop });
+    }
+
+    // Resize
+    if (dragRef.current.resizing) {
+      const deltaX = e.clientX - dragRef.current.startX;
+      const deltaY = e.clientY - dragRef.current.startY;
+      const newWidth = Math.max(100, dragRef.current.startWidth + deltaX);
+      const newHeight = Math.max(70, dragRef.current.startHeight + deltaY);
+      setPipSize({ width: newWidth, height: newHeight });
+    }
+  };
+
+  const handleMouseUp = () => {
+    dragRef.current.dragging = false;
+    dragRef.current.resizing = false;
+  };
 
   // ------------------ Peer Connection ------------------
   const initPeerConnection = useCallback(() => {
@@ -19,23 +67,24 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
 
     const pc = new RTCPeerConnection(servers);
     pcRef.current = pc;
-
-    // 🔹 Remote track
-   pc.ontrack = (event) => {
-      console.log("ON track event>>>>>>>", event);
+    console.log("SETTING CENNECTION@#########");
+    
+    pc.ontrack = (event) => {
       const [remoteStream] = event.streams;
-      if (remoteVideoRef.current && remoteStream) {
-        if (remoteVideoRef.current.srcObject !== remoteStream) {
+      console.log("RECEIVED REMOTE STREAM");
+      if (!remoteStream) return;
+
+      const attachStream = () => {
+        if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = remoteStream;
-          console.log("✅ Remote stream set");
+          remoteVideoRef.current.play().catch(() => {});
+        } else {
+          setTimeout(attachStream, 50);
         }
-      } else {
-        console.log("⚠️ remoteVideoRef not ready or no stream");
-      }
+      };
+      attachStream();
     };
 
-
-    // 🔹 ICE candidates
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         socket.emit("iceCandidate", {
@@ -45,7 +94,6 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
       }
     };
 
-    // 🔹 Caller receives answer
     socket.on("callAnswered", async ({ answer }) => {
       if (!pcRef.current) return;
       try {
@@ -55,7 +103,6 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
       }
     });
 
-    // 🔹 Remote ICE candidates
     socket.on("iceCandidate", async ({ candidate }) => {
       if (!pcRef.current) return;
       try {
@@ -65,16 +112,16 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
       }
     });
 
-    // 🔹 Remote call ended
-    socket.on("callEnded", () => {
-      endCallLocal();
-    });
+    socket.on("callEnded", () => endCallLocal());
   }, [socket, selectedFriend.name]);
 
   // ------------------ Incoming Call ------------------
   useEffect(() => {
     const handleIncomingCall = async () => {
       if (!incomingCallOffer) return;
+
+      console.log("############");
+      
       initPeerConnection();
 
       try {
@@ -83,17 +130,15 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
         stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
 
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(incomingCallOffer));
-
         const answer = await pcRef.current.createAnswer();
         await pcRef.current.setLocalDescription(answer);
 
         socket.emit("answerCall", { to: selectedFriend.name, answer });
         setInCall(true);
       } catch (err) {
-        console.error("Error accessing camera or setting remote description:", err);
+        console.error("Error handling incoming call:", err);
       }
     };
-
     handleIncomingCall();
   }, [incomingCallOffer, initPeerConnection, selectedFriend.name, socket]);
 
@@ -125,7 +170,7 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
   // ------------------ End Call ------------------
   const stopCall = () => {
     const localStream = localVideoRef.current?.srcObject;
-    if (localStream) localStream.getTracks().forEach((track) => track.stop());
+    if (localStream) localStream.getTracks().forEach((t) => t.stop());
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     if (pcRef.current) {
@@ -134,43 +179,11 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
     }
     setInCall(false);
   };
-
-  const endCallLocal = () => {
-    stopCall();
-  };
-
-  // ------------------ Draggable PiP ------------------
-  const handleMouseDown = (e) => {
-    dragRef.current.dragging = true;
-    const rect = localVideoRef.current.getBoundingClientRect();
-    dragRef.current.offsetX = e.clientX - rect.left;
-    dragRef.current.offsetY = e.clientY - rect.top;
-  };
-
-  const handleMouseMove = (e) => {
-    if (!dragRef.current.dragging) return;
-
-    let newLeft = e.clientX - dragRef.current.offsetX;
-    let newTop = e.clientY - dragRef.current.offsetY;
-
-    const winWidth = window.innerWidth - 200;
-    const winHeight = window.innerHeight - 140;
-    newLeft = Math.max(0, Math.min(newLeft, winWidth));
-    newTop = Math.max(0, Math.min(newTop, winHeight));
-
-    setDragPos({ left: newLeft, top: newTop });
-  };
-
-  const handleMouseUp = () => {
-    dragRef.current.dragging = false;
-  };
+  const endCallLocal = () => stopCall();
 
   // ------------------ Styles ------------------
   const videoContainerStyle = {
     position: "relative",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
     width: "100%",
     maxWidth: "900px",
     height: "500px",
@@ -188,8 +201,8 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
 
   const localVideoStyle = {
     position: "fixed",
-    width: "200px",
-    height: "140px",
+    width: `${pipSize.width}px`,
+    height: `${pipSize.height}px`,
     borderRadius: "8px",
     border: "2px solid white",
     objectFit: "cover",
@@ -197,6 +210,19 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
     cursor: "move",
     left: `${dragPos.left}px`,
     top: `${dragPos.top}px`,
+  };
+
+  const resizeHandleStyle = {
+    position: "absolute",
+    width: "12px",
+    height: "12px",
+    background: "#fff",
+    border: "2px solid #000",
+    borderRadius: "50%",
+    bottom: "-6px",
+    right: "-6px",
+    cursor: "se-resize",
+    zIndex: 10000,
   };
 
   // ------------------ Render ------------------
@@ -208,19 +234,20 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
       onMouseUp={handleMouseUp}
     >
       <div style={videoContainerStyle}>
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          playsInline
-          style={remoteVideoStyle}
-        />
+        <video ref={remoteVideoRef} autoPlay playsInline style={remoteVideoStyle} />
         <video
           ref={localVideoRef}
           autoPlay
+          // muted
           playsInline
           style={localVideoStyle}
           onMouseDown={handleMouseDown}
-        />
+        >
+          <div
+            style={resizeHandleStyle}
+            onMouseDown={handleResizeMouseDown}
+          />
+        </video>
       </div>
 
       {inCall ? (
