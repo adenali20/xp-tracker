@@ -9,62 +9,17 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
 
   const servers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-  // 🔹 Handle incoming call
-  useEffect(() => {
-    const openMedia = async () => {
-      if (!incomingCallOffer) return;
-      console.log("###########incoming call offer changed", incomingCallOffer);
-
-      try {
-        initPeerConnection();
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-
-        // set local video
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-        }
-
-        // add local tracks
-        stream.getTracks().forEach((track) =>
-          pcRef.current.addTrack(track, stream)
-        );
-
-        // set remote description and create answer
-        await pcRef.current.setRemoteDescription(
-          new RTCSessionDescription(incomingCallOffer)
-        );
-        const answer = await pcRef.current.createAnswer();
-        await pcRef.current.setLocalDescription(answer);
-        socket.emit("answerCall", { to: selectedFriend.name, answer });
-      } catch (err) {
-        console.error("Error accessing camera:", err);
-      }
-    };
-
-    openMedia();
-  }, [incomingCallOffer]);
-
-  // 🔹 Initialize peer connection
   const initPeerConnection = useCallback(() => {
     if (pcRef.current) return;
-
     const pc = new RTCPeerConnection(servers);
     pcRef.current = pc;
 
     pc.ontrack = (event) => {
-      console.log("ON track event>>>>>>>", event);
       const [remoteStream] = event.streams;
       if (remoteVideoRef.current && remoteStream) {
         if (remoteVideoRef.current.srcObject !== remoteStream) {
           remoteVideoRef.current.srcObject = remoteStream;
-          console.log("✅ Remote stream set");
         }
-      } else {
-        console.log("⚠️ remoteVideoRef not ready or no stream");
       }
     };
 
@@ -78,45 +33,45 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
     };
 
     socket.on("callAnswered", async ({ answer }) => {
-      console.log("Call answered________");
-      try {
-        if (!pcRef.current) return;
-        await pcRef.current.setRemoteDescription(
-          new RTCSessionDescription(answer)
-        );
-      } catch (err) {
-        console.error("Error setting remote description:", err);
-      }
+      if (!pcRef.current) return;
+      await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
     });
 
     socket.on("iceCandidate", async ({ candidate }) => {
-      try {
-        if (!pcRef.current) return;
-        await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-      } catch (error) {
-        console.error("Error adding ICE candidate:", error);
-      }
+      if (!pcRef.current) return;
+      await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
     });
 
     socket.on("callEnded", () => {
-      console.log("Remote user ended call");
       endCallLocal();
     });
   }, [socket, selectedFriend.name]);
+
+  useEffect(() => {
+    const openMedia = async () => {
+      if (!incomingCallOffer) return;
+      initPeerConnection();
+
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
+
+      await pcRef.current.setRemoteDescription(new RTCSessionDescription(incomingCallOffer));
+      const answer = await pcRef.current.createAnswer();
+      await pcRef.current.setLocalDescription(answer);
+      socket.emit("answerCall", { to: selectedFriend.name, answer });
+    };
+
+    openMedia();
+  }, [incomingCallOffer, initPeerConnection, selectedFriend.name, socket]);
 
   const startCall = async () => {
     setInCall(true);
     if (!socket || !selectedFriend || inCall) return;
 
     initPeerConnection();
-
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
-    });
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = stream;
-    }
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    if (localVideoRef.current) localVideoRef.current.srcObject = stream;
     stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
 
     const offer = await pcRef.current.createOffer();
@@ -126,58 +81,57 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
       offer,
       from: sessionStorage.getItem("userName"),
     });
-
-    setInCall(true);
   };
 
   const stopCall = () => {
     const stream = localVideoRef.current?.srcObject;
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = null;
-      }
-      setInCall(false);
-    } else {
-      console.log("No stream available on the video element yet.");
-    }
-  };
-
-  const endCallLocal = () => {
+    if (stream) stream.getTracks().forEach((track) => track.stop());
+    if (localVideoRef.current) localVideoRef.current.srcObject = null;
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     if (pcRef.current) {
       pcRef.current.close();
       pcRef.current = null;
     }
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = null;
-    }
-    if (localVideoRef.current) {
-      const stream = localVideoRef.current.srcObject;
-      if (stream) stream.getTracks().forEach((t) => t.stop());
-      localVideoRef.current.srcObject = null;
-    }
     setInCall(false);
   };
 
+  const videoContainerStyle = {
+    position: "relative",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+    maxWidth: "900px",
+    height: "500px",
+    margin: "0 auto",
+    backgroundColor: "#000",
+    borderRadius: "8px",
+    overflow: "hidden",
+  };
+
+  const remoteVideoStyle = {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+  };
+
+  const localVideoStyle = {
+    position: "absolute",
+    bottom: "20px",
+    right: "20px",
+    width: "200px",
+    height: "140px",
+    borderRadius: "8px",
+    border: "2px solid white",
+    objectFit: "cover",
+    zIndex: 10,
+  };
+
   return (
-    <div
-      className="video-chat-panel"
-      style={{ textAlign: "center", padding: "10px" }}
-    >
-      <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
-        <video
-          ref={localVideoRef}
-          autoPlay
-          muted
-          playsInline
-          style={{ width: "200px", border: "1px solid gray" }}
-        />
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          playsInline
-          style={{ width: "200px", border: "1px solid gray" }}
-        />
+    <div className="video-chat-panel" style={{ textAlign: "center", padding: "10px" }}>
+      <div style={videoContainerStyle}>
+        <video ref={remoteVideoRef} autoPlay playsInline style={remoteVideoStyle} />
+        <video ref={localVideoRef} autoPlay muted playsInline style={localVideoStyle} />
       </div>
 
       {inCall ? (

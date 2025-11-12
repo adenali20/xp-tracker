@@ -7,15 +7,14 @@ import { fetchFriends } from "../../redux/reducers/friendsSlice";
 import io from "socket.io-client";
 import "./Friends.css";
 
-// const SOCKET_URL = "https://adenali.com";
-
 const Friends = () => {
   const dispatch = useDispatch();
   const { friends = [], loading, error } = useSelector((state) => state.friends) || {};
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [showVideoChat, setShowVideoChat] = useState(false);
-  const [incomingCallOffer, setIncomingCallOffer] = useState(null); // <-- new
-  const [incomingCaller, setIncomingCaller] = useState(null); // <-- who is calling
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [incomingCallOffer, setIncomingCallOffer] = useState(null);
+  const [incomingCaller, setIncomingCaller] = useState(null);
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [imageFile, setImageFile] = useState(null);
@@ -40,19 +39,19 @@ const Friends = () => {
       setOnlineUsers((prev) => prev.filter((u) => u !== username))
     );
 
-    // Listen for incoming call
     socket.on("incomingCall", ({ from, offer }) => {
-      console.log("###########incoming received");
-      
+      console.log("########### incoming received");
       setIncomingCaller(from);
       setIncomingCallOffer(offer);
-      setSelectedFriend(friends.find(f => f.name === from) || { name: from }); // auto-select caller
+      setSelectedFriend(friends.find((f) => f.name === from) || { name: from });
     });
 
     return () => socket.disconnect();
   }, [friends]);
 
-  useEffect(() => { dispatch(fetchFriends()); }, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchFriends());
+  }, [dispatch]);
 
   const filteredFriends = friends.filter((f) =>
     f.name.toLowerCase().includes("")
@@ -60,12 +59,14 @@ const Friends = () => {
 
   const handleVideoCallClick = () => {
     setShowVideoChat(true);
+    setIsMinimized(false);
     setIncomingCallOffer(null);
     setIncomingCaller(null);
   };
 
   const handleIncomingCallAccept = () => {
     setShowVideoChat(true);
+    setIsMinimized(false);
   };
 
   const handleIncomingCallDecline = () => {
@@ -78,6 +79,42 @@ const Friends = () => {
 
   return (
     <div className="friends-container">
+      {/* Video Chat Overlay */}
+      {showVideoChat && (
+        <div
+          className={`video-chat-overlay ${
+            isMinimized ? "video-chat-minimized" : ""
+          }`}
+          style={{ pointerEvents: isMinimized ? "none" : "auto" }}
+        >
+          <VideoChatPanel
+            socket={socketRef.current}
+            selectedFriend={selectedFriend}
+            incomingCallOffer={incomingCallOffer}
+          />
+
+          {/* Buttons */}
+          <div
+            className="video-overlay-controls"
+            style={{ pointerEvents: "auto" }} // allows buttons to be clickable even when minimized
+          >
+            <button
+              className="minimize-btn"
+              onClick={() => setIsMinimized((prev) => !prev)}
+            >
+              {isMinimized ? "🗖" : "🗕"}
+            </button>
+            <button
+              className="close-video-chat-btn"
+              onClick={() => setShowVideoChat(false)}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Existing layout */}
       <FriendsList
         friends={friends}
         filteredFriends={filteredFriends}
@@ -98,8 +135,10 @@ const Friends = () => {
             setSelectedFriend={setSelectedFriend}
             messages={messages.filter(
               (m) =>
-                (m.fromUser === selectedFriend.name && m.to === sessionStorage.getItem("userName")) ||
-                (m.fromUser === sessionStorage.getItem("userName") && m.to === selectedFriend.name)
+                (m.fromUser === selectedFriend.name &&
+                  m.to === sessionStorage.getItem("userName")) ||
+                (m.fromUser === sessionStorage.getItem("userName") &&
+                  m.to === selectedFriend.name)
             )}
             setMessages={setMessages}
             newMessage={newMessage}
@@ -113,22 +152,12 @@ const Friends = () => {
             onVideoCallClick={handleVideoCallClick}
           />
 
-          {/* Incoming Call Banner */}
           {incomingCallOffer && !showVideoChat && (
             <div className="incoming-call-banner">
               <p>{incomingCaller} is calling...</p>
               <button onClick={handleIncomingCallAccept}>Accept</button>
               <button onClick={handleIncomingCallDecline}>Decline</button>
             </div>
-          )}
-
-          {/* Video Chat Panel */}
-          {showVideoChat && (
-            <VideoChatPanel
-              socket={socketRef.current}
-              selectedFriend={selectedFriend}
-              incomingCallOffer={incomingCallOffer}
-            />
           )}
         </>
       )}
