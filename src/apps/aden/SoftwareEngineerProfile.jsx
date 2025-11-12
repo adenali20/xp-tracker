@@ -96,7 +96,7 @@ export default function ResumePage() {
 
         <div className="job">
           <h3>Northern Trust, Chicago, USA</h3>
-          <p className="job-duration">12/2024 – 10/2025</p>
+          <p className="job-duration">12/2024 – Present</p>
           <p className="job-title">Full Stack Java Developer</p>
           <p>Financial services company.</p>
           <ul>
