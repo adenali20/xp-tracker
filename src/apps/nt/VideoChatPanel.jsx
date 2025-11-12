@@ -8,7 +8,27 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
   const [inCall, setInCall] = useState(false);
 
   const servers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+  // 🔹 Handle incoming call
+useEffect(() => {
+  const openMedia = async () => {
+    if (!incomingCallOffer) return;
+    console.log("###########incoming call offer changed", incomingCallOffer);
 
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }else{
+        console.log("######");
+        
+      }
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+    }
+  };
+
+  openMedia();
+}, [incomingCallOffer]);
   // 🔹 Initialize peer connection
   const initPeerConnection = useCallback(() => {
     if (pcRef.current) return;
@@ -53,8 +73,8 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
     });
   }, [socket, selectedFriend.name]);
 
-  // 🔹 Start outgoing call
   const startCall = async () => {
+    setInCall(true);
     if (!socket || !selectedFriend || inCall) return;
 
     initPeerConnection();
@@ -74,51 +94,21 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
     setInCall(true);
   };
 
-  // 🔹 Handle incoming call
-  useEffect(() => {
-    if (!incomingCallOffer || inCall) return;
+  const stopCall = () => {
 
-    const acceptCall = async () => {
-      initPeerConnection();
-
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      localVideoRef.current.srcObject = stream;
-      stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
-
-      await pcRef.current.setRemoteDescription(new RTCSessionDescription(incomingCallOffer));
-      const answer = await pcRef.current.createAnswer();
-      await pcRef.current.setLocalDescription(answer);
-      socket.emit("answerCall", { to: selectedFriend.name, answer });
-
-      setInCall(true);
-    };
-
-    acceptCall();
-  }, [incomingCallOffer, inCall, initPeerConnection, socket, selectedFriend.name]);
-
-  // 🔹 End call locally
-  const endCallLocal = () => {
-    if (pcRef.current) {
-      pcRef.current.close();
-      pcRef.current = null;
+     const stream = localVideoRef.current?.srcObject;
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = null;
+      }
+      setInCall(false);
+    } else {
+      console.log("No stream available on the video element yet.");
     }
-    if (localVideoRef.current?.srcObject) {
-      localVideoRef.current.srcObject.getTracks().forEach((track) => track.stop());
-      localVideoRef.current.srcObject = null;
-    }
-    if (remoteVideoRef.current?.srcObject) {
-      remoteVideoRef.current.srcObject.getTracks().forEach((track) => track.stop());
-      remoteVideoRef.current.srcObject = null;
-    }
-    setInCall(false);
-  };
 
-  // 🔹 Cancel call (triggered by button)
-  const cancelCall = () => {
-    socket.emit("endCall", { to: selectedFriend.name });
-    endCallLocal();
-  };
-
+  }
+  
   return (
     <div className="video-chat-panel" style={{ textAlign: "center", padding: "10px" }}>
       <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
@@ -127,7 +117,7 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
       </div>
 
       {inCall ? (
-        <button onClick={cancelCall} style={{ marginTop: "10px", backgroundColor: "red", color: "white" }}>
+        <button onClick={stopCall} style={{ marginTop: "10px", backgroundColor: "red", color: "white" }}>
           End Call
         </button>
       ) : (

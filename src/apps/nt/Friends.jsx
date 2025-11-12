@@ -42,6 +42,8 @@ const Friends = () => {
 
     // Listen for incoming call
     socket.on("incomingCall", ({ from, offer }) => {
+      console.log("###########incoming received");
+      
       setIncomingCaller(from);
       setIncomingCallOffer(offer);
       setSelectedFriend(friends.find(f => f.name === from) || { name: from }); // auto-select caller
