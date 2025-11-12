@@ -8,27 +8,46 @@ const VideoChatPanel = ({ socket, selectedFriend, incomingCallOffer }) => {
   const [inCall, setInCall] = useState(false);
 
   const servers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+
   // 🔹 Handle incoming call
-useEffect(() => {
-  const openMedia = async () => {
-    if (!incomingCallOffer) return;
-    console.log("###########incoming call offer changed", incomingCallOffer);
+  useEffect(() => {
+    const openMedia = async () => {
+      if (!incomingCallOffer) return;
+      console.log("###########incoming call offer changed", incomingCallOffer);
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }else{
-        console.log("######");
-        
+      try {
+        initPeerConnection();
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+
+        // set local video
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+
+        // add local tracks
+        stream.getTracks().forEach((track) =>
+          pcRef.current.addTrack(track, stream)
+        );
+
+        // set remote description and create answer
+        await pcRef.current.setRemoteDescription(
+          new RTCSessionDescription(incomingCallOffer)
+        );
+        const answer = await pcRef.current.createAnswer();
+        await pcRef.current.setLocalDescription(answer);
+        socket.emit("answerCall", { to: selectedFriend.name, answer });
+      } catch (err) {
+        console.error("Error accessing camera:", err);
       }
-    } catch (err) {
-      console.error("Error accessing camera:", err);
-    }
-  };
+    };
 
-  openMedia();
-}, [incomingCallOffer]);
+    openMedia();
+  }, [incomingCallOffer]);
+
   // 🔹 Initialize peer connection
   const initPeerConnection = useCallback(() => {
     if (pcRef.current) return;
@@ -37,7 +56,16 @@ useEffect(() => {
     pcRef.current = pc;
 
     pc.ontrack = (event) => {
-      remoteVideoRef.current.srcObject = event.streams[0];
+      console.log("ON track event>>>>>>>", event);
+      const [remoteStream] = event.streams;
+      if (remoteVideoRef.current && remoteStream) {
+        if (remoteVideoRef.current.srcObject !== remoteStream) {
+          remoteVideoRef.current.srcObject = remoteStream;
+          console.log("✅ Remote stream set");
+        }
+      } else {
+        console.log("⚠️ remoteVideoRef not ready or no stream");
+      }
     };
 
     pc.onicecandidate = (event) => {
@@ -50,9 +78,12 @@ useEffect(() => {
     };
 
     socket.on("callAnswered", async ({ answer }) => {
+      console.log("Call answered________");
       try {
         if (!pcRef.current) return;
-        await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+        await pcRef.current.setRemoteDescription(
+          new RTCSessionDescription(answer)
+        );
       } catch (err) {
         console.error("Error setting remote description:", err);
       }
@@ -79,8 +110,13 @@ useEffect(() => {
 
     initPeerConnection();
 
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    localVideoRef.current.srcObject = stream;
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true,
+    });
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = stream;
+    }
     stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
 
     const offer = await pcRef.current.createOffer();
@@ -95,10 +131,9 @@ useEffect(() => {
   };
 
   const stopCall = () => {
-
-     const stream = localVideoRef.current?.srcObject;
+    const stream = localVideoRef.current?.srcObject;
     if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = null;
       }
@@ -106,18 +141,50 @@ useEffect(() => {
     } else {
       console.log("No stream available on the video element yet.");
     }
+  };
 
-  }
-  
+  const endCallLocal = () => {
+    if (pcRef.current) {
+      pcRef.current.close();
+      pcRef.current = null;
+    }
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null;
+    }
+    if (localVideoRef.current) {
+      const stream = localVideoRef.current.srcObject;
+      if (stream) stream.getTracks().forEach((t) => t.stop());
+      localVideoRef.current.srcObject = null;
+    }
+    setInCall(false);
+  };
+
   return (
-    <div className="video-chat-panel" style={{ textAlign: "center", padding: "10px" }}>
+    <div
+      className="video-chat-panel"
+      style={{ textAlign: "center", padding: "10px" }}
+    >
       <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
-        <video ref={localVideoRef} autoPlay muted style={{ width: "200px", border: "1px solid gray" }} />
-        <video ref={remoteVideoRef} autoPlay style={{ width: "200px", border: "1px solid gray" }} />
+        <video
+          ref={localVideoRef}
+          autoPlay
+          muted
+          playsInline
+          style={{ width: "200px", border: "1px solid gray" }}
+        />
+        <video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          style={{ width: "200px", border: "1px solid gray" }}
+        />
       </div>
 
       {inCall ? (
-        <button onClick={stopCall} style={{ marginTop: "10px", backgroundColor: "red", color: "white" }}>
+        <button
+          onClick={stopCall}
+          style={{ marginTop: "10px", backgroundColor: "red", color: "white" }}
+        >
           End Call
         </button>
       ) : (
