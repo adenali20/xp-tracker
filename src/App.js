@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import SoftwareEngineerProfile from "./apps/aden/SoftwareEngineerProfile";
+// import SoftwareEngineerProfile from "./apps/aden/SoftwareEngineerProfile";
 import XtPrivateRoute from "./routes/XtPrivateRoute";
 import NtPrivateRoute from "./routes/NtPrivateRoute";
 // XP Tracker
@@ -24,7 +24,7 @@ const App = () => {
     <Router>
       <Routes>
         {/* Public root routes */}
-        <Route path="/" element={<SoftwareEngineerProfile />} />
+        {/* <Route path="/" element={<SoftwareEngineerProfile />} /> */}
 
         {/* --- XP TRACKER --- */}
         <Route path="/xt/login" element={<XtLogin />} />
@@ -44,6 +44,9 @@ const App = () => {
 
         <Route element={<NtPrivateRoute app="chat" />}>
           <Route path="/nt" element={<NtLayout />}>
+            <Route index element={<NtFriends />} />
+          </Route>
+          <Route path="/" element={<NtLayout />}>
             <Route index element={<NtFriends />} />
           </Route>
         </Route>
