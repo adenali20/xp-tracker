@@ -17,8 +17,20 @@ const Friends = () => {
   const [status, setStatus] = useState("idle"); // idle | calling | incoming | in-call
   const [incomingCallOffer, setIncomingCallOffer] = useState(null);
   const [incomingCaller, setIncomingCaller] = useState(null);
+  const [remoteMuted, setRemoteMuted] = useState(true);
+  const [inCall, setInCall] = useState(false);
 
-  const servers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+  // NOTE: put a TURN server here for production if you have one
+ const servers = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" }, // Google STUN
+    {
+      urls: "turn:138.68.247.139:3478",
+      username: "turnuser",
+      credential: "turnpassword",
+    },
+  ],
+};
 
   // Initialize socket once
   useEffect(() => {
@@ -32,7 +44,6 @@ const Friends = () => {
     });
     socketRef.current = socket;
 
-    // Incoming call from other peer
     socket.on("incomingCall", ({ from, offer }) => {
       console.log("incomingCall from", from);
       setIncomingCaller(from);
@@ -40,19 +51,18 @@ const Friends = () => {
       setStatus("incoming");
     });
 
-    // Peer answered our call (we were caller)
     socket.on("callAnswered", async ({ answer }) => {
       console.log("callAnswered received");
       if (!pcRef.current) return;
       try {
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
         setStatus("in-call");
+        setInCall(true);
       } catch (err) {
         console.error("Error setting remote description (callAnswered):", err);
       }
     });
 
-    // Incoming ICE candidates from server/remote
     socket.on("iceCandidate", async ({ candidate }) => {
       if (!pcRef.current || !candidate) return;
       try {
@@ -62,15 +72,22 @@ const Friends = () => {
       }
     });
 
+    socket.on("callEnded", () => {
+      console.log("callEnded received from remote");
+      endCall();
+    });
+
     return () => {
-      // cleanup socket listeners + disconnect
-      socket.off("incomingCall");
-      socket.off("callAnswered");
-      socket.off("iceCandidate");
-      socket.disconnect();
+      try {
+        socket.off("incomingCall");
+        socket.off("callAnswered");
+        socket.off("iceCandidate");
+        socket.off("callEnded");
+        socket.disconnect();
+      } catch (e) {}
       socketRef.current = null;
     };
-  }, []); // run once
+  }, []);
 
   // Create and wire up a new RTCPeerConnection
   const createPeerConnection = (targetFriend) => {
@@ -79,37 +96,53 @@ const Friends = () => {
     const pc = new RTCPeerConnection(servers);
     pcRef.current = pc;
 
-    // ontrack: handle remote stream(s)
+    // ontrack: handle remote stream(s) — attach only once on video track
     pc.ontrack = (event) => {
-      // event.streams is preferred when available (most browsers)
-      let remoteStream = event.streams && event.streams[0];
+      try {
+        console.log("ontrack fired with:", event.track?.kind, "streams:", event.streams);
+        // prefer event.streams[0] when available
+        let remoteStream = (event.streams && event.streams[0]) || null;
 
-      // If event.streams is empty, build a MediaStream from the tracks
-      if (!remoteStream) {
-        remoteStream = new MediaStream();
-        if (event.track) remoteStream.addTrack(event.track);
-      }
+        // if streams empty, construct from track
+        if (!remoteStream) {
+          remoteStream = new MediaStream();
+          if (event.track) remoteStream.addTrack(event.track);
+        }
 
-      // Attach the remote stream only if it's different / not already attached
-      const current = remoteVideoRef.current;
-      if (current && current.srcObject !== remoteStream) {
-        current.srcObject = remoteStream;
+        const videoEl = remoteVideoRef.current;
+        if (!videoEl) return;
 
-        // Ensure play is called after metadata is loaded so play() isn't interrupted
-        const onLoaded = () => {
-          current.play().catch((err) => {
-            // Not fatal — log for debugging
-            console.log("remote play() error (may be autoplay policy):", err);
-          });
-          current.removeEventListener("loadedmetadata", onLoaded);
-        };
-        current.addEventListener("loadedmetadata", onLoaded);
+        // Only attach when the video track arrives (prevents replacing srcObject on audio track)
+        if (event.track && event.track.kind === "video") {
+          if (videoEl.srcObject !== remoteStream) {
+            console.log("### attaching remote VIDEO stream");
+            videoEl.srcObject = remoteStream;
+            // ensure element remains mounted (we hide/show it with CSS)
+            setInCall(true);
+
+            // use rAF + small timeout to avoid race/play interruption
+            requestAnimationFrame(() => {
+              setTimeout(() => {
+                // attempt to play; if blocked by autoplay, user must unmute/interact
+                videoEl.play().catch((err) => {
+                  console.warn("video play error (may be autoplay):", err);
+                });
+              }, 40);
+            });
+          }
+        } else {
+          // If event.track.kind === 'audio' and video already attached this is fine.
+          console.log("audio track arrived");
+        }
+      } catch (e) {
+        console.error("ontrack handler error:", e);
       }
     };
 
     // Send ICE candidates to remote through your signaling server
     pc.onicecandidate = (event) => {
       if (event.candidate && socketRef.current) {
+        console.log("emitting local ICE candidate");
         socketRef.current.emit("iceCandidate", {
           to: targetFriend,
           candidate: event.candidate,
@@ -117,11 +150,10 @@ const Friends = () => {
       }
     };
 
-    // Optional: connection state logging
     pc.onconnectionstatechange = () => {
       console.log("PC state:", pc.connectionState);
       if (pc.connectionState === "disconnected" || pc.connectionState === "failed") {
-        // Consider ending call
+        // consider ending call or restarting ICE
       }
     };
 
@@ -130,41 +162,51 @@ const Friends = () => {
 
   // Stop and cleanup local stream + RTCPeerConnection
   const endCall = () => {
+    console.log("Ending call and cleaning up");
+    const prevFriend = friend;
     setFriend(null);
     setIncomingCallOffer(null);
     setIncomingCaller(null);
     setStatus("idle");
+    setInCall(false);
 
     // stop local tracks
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((t) => t.stop());
+      try {
+        localStreamRef.current.getTracks().forEach((t) => t.stop());
+      } catch (e) {
+        console.warn("error stopping local tracks", e);
+      }
       localStreamRef.current = null;
     }
     if (localVideoRef.current) {
-      localVideoRef.current.srcObject = null;
+      try {
+        localVideoRef.current.srcObject = null;
+      } catch (e) {}
     }
 
     // stop remote video
     if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = null;
+      try {
+        remoteVideoRef.current.srcObject = null;
+      } catch (e) {}
     }
 
     // close pc
     if (pcRef.current) {
       try {
-        pcRef.current.getSenders()?.forEach((s) => {
-          // optionally replaceTrack(null) for graceful stop
-        });
-      } catch {}
-      try {
         pcRef.current.close();
-      } catch {}
+      } catch (e) {
+        console.warn("error closing pc", e);
+      }
       pcRef.current = null;
     }
 
     // Tell remote we ended (optional depending on your server)
-    if (socketRef.current && friend) {
-      socketRef.current.emit("callEnded", { to: friend });
+    if (socketRef.current && prevFriend) {
+      try {
+        socketRef.current.emit("callEnded", { to: prevFriend });
+      } catch (e) {}
     }
   };
 
@@ -176,24 +218,32 @@ const Friends = () => {
     try {
       const pc = createPeerConnection(toFriend);
 
-      // get local media
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      // IMPORTANT: getUserMedia BEFORE creating offer so tracks are present in offer
+      const constraints = { video: { facingMode: "user" }, audio: true };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       localStreamRef.current = stream;
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
-      // add tracks to pc
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+      // add tracks to pc BEFORE createOffer
+      stream.getTracks().forEach((track) => {
+        pc.addTrack(track, stream);
+      });
 
-      // create offer
+      console.log("Local tracks:", stream.getTracks().map((t) => t.kind));
+      console.log("pc senders after addTrack:", pc.getSenders().map((s) => s.track?.kind));
+
+      // create offer AFTER tracks added
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
       // send to signaling server
-      socketRef.current.emit("callUser", {
-        to: toFriend,
-        offer,
-        from: sessionStorage.getItem("userName"),
-      });
+      if (socketRef.current) {
+        socketRef.current.emit("callUser", {
+          to: toFriend,
+          offer,
+          from: sessionStorage.getItem("userName"),
+        });
+      }
     } catch (err) {
       console.error("startCall error:", err);
       endCall();
@@ -208,13 +258,17 @@ const Friends = () => {
     try {
       const pc = createPeerConnection(incomingCaller);
 
-      // get local media
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      // IMPORTANT: getUserMedia BEFORE setRemoteDescription/createAnswer
+      const constraints = { video: { facingMode: "user" }, audio: true };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       localStreamRef.current = stream;
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
-      // add tracks
+      // add tracks BEFORE createAnswer
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+      console.log("Local tracks (callee):", stream.getTracks().map((t) => t.kind));
+      console.log("pc senders after addTrack (callee):", pc.getSenders().map((s) => s.track?.kind));
 
       // set remote offer & create answer
       await pc.setRemoteDescription(new RTCSessionDescription(incomingCallOffer));
@@ -222,14 +276,30 @@ const Friends = () => {
       await pc.setLocalDescription(answer);
 
       // send answer
-      socketRef.current.emit("answerCall", { to: incomingCaller, answer });
+      if (socketRef.current) {
+        socketRef.current.emit("answerCall", { to: incomingCaller, answer });
+      }
 
       setStatus("in-call");
       setIncomingCallOffer(null);
       setIncomingCaller(null);
+      setInCall(true);
     } catch (err) {
       console.error("handleIncomingCall error:", err);
       endCall();
+    }
+  };
+
+  // Unmute remote audio (user gesture required for many browsers)
+  const unmuteRemote = () => {
+    setRemoteMuted(false);
+    try {
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.muted = false;
+        remoteVideoRef.current.play().catch((err) => console.log("play after unmute error:", err));
+      }
+    } catch (e) {
+      console.warn("unmuteRemote error:", e);
     }
   };
 
@@ -280,6 +350,11 @@ const Friends = () => {
         <div>
           <p>In call with {friend}</p>
           <button onClick={endCall}>End Call</button>
+          {remoteMuted && (
+            <button onClick={unmuteRemote} style={{ marginLeft: 8 }}>
+              Unmute Remote Audio
+            </button>
+          )}
         </div>
       );
     }
@@ -292,6 +367,7 @@ const Friends = () => {
     height: "140px",
     borderRadius: "8px",
     objectFit: "cover",
+    background: "black",
   };
 
   return (
@@ -302,20 +378,31 @@ const Friends = () => {
       {renderControls()}
 
       <div style={{ position: "relative", marginTop: 12 }}>
-        <video
-          ref={localVideoRef}
-          autoPlay
-          playsInline
-          muted
-          style={localVideoStyle}
-        />
+        <video ref={localVideoRef} autoPlay playsInline muted style={localVideoStyle} />
       </div>
 
       <hr />
 
       <h2>Remote</h2>
       <div style={{ width: "640px", height: "360px", background: "#000" }}>
-        <video ref={remoteVideoRef} autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        {/* Remote video is always mounted (do NOT conditionally mount) — we hide it via CSS.
+            It's muted initially (remoteMuted) to improve autoplay reliability. */}
+        <video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          muted={remoteMuted}
+          // show/hide visually instead of unmounting to avoid play() interruption
+          style={{
+            width: "640px",
+            height: "360px",
+            background: "black",
+            objectFit: "cover",
+            zIndex: 10,
+            position: "relative",
+            display: inCall ? "block" : "none",
+          }}
+        />
       </div>
     </div>
   );
