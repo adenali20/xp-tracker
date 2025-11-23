@@ -22,13 +22,16 @@ const Friends = () => {
 
   // NOTE: put a TURN server here for production if you have one
  const servers = {
+  iceTransportPolicy: "relay",
   iceServers: [
-    { urls: "stun:stun.l.google.com:19302" }, // Google STUN
     {
-      urls: "turn:138.68.247.139:3478",
-      username: "turnuser",
-      credential: "turnpassword",
-    },
+      urls: [
+        "turn:global.relay.metered.ca:443?transport=tcp",
+        "turns:global.relay.metered.ca:443?transport=tcp" // TLS fallback
+      ],
+      username: "44c31ceccfa165e958e6d7b0",
+      credential: "u+cYRNuJyt6Vvdc3"
+    }
   ],
 };
 
