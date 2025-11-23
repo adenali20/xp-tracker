@@ -21,19 +21,46 @@ const Friends = () => {
   const [inCall, setInCall] = useState(false);
 
   // NOTE: put a TURN server here for production if you have one
- const servers = {
-  iceTransportPolicy: "relay",
-  iceServers: [
-    {
-      urls: [
-        "turn:global.relay.metered.ca:443?transport=tcp",
-        "turns:global.relay.metered.ca:443?transport=tcp" // TLS fallback
-      ],
-      username: "44c31ceccfa165e958e6d7b0",
-      credential: "u+cYRNuJyt6Vvdc3"
+  const servers = {
+    // keep relay if you want forced TURN; remove/adjust if you want STUN+TURN fallback
+    iceTransportPolicy: "relay",
+    iceServers: [
+      {
+        urls: [
+          // UDP fallbacks (common), then TCP and TLS
+          "turn:global.relay.metered.ca:3478?transport=udp",
+          "turn:global.relay.metered.ca:80?transport=udp",
+          "turn:global.relay.metered.ca:443?transport=tcp",
+          "turns:global.relay.metered.ca:443?transport=tcp" // TLS fallback
+        ],
+        username: "44c31ceccfa165e958e6d7b0",
+        credential: "u+cYRNuJyt6Vvdc3",
+      }
+    ],
+  };
+
+  // ---------- Helper: dump getStats ----------
+  const dumpStats = async (label = "") => {
+    if (!pcRef.current) {
+      console.log("[STATS] no pc to dump stats for", label);
+      return;
     }
-  ],
-};
+    try {
+      const stats = await pcRef.current.getStats();
+      console.log(`[STATS] dump start (${label})`);
+      stats.forEach((r) => {
+        if (r.type === "candidate-pair" && r.state === "succeeded") {
+          console.log("[STATS] succeeded candidate-pair:", r);
+        }
+        if (r.type === "local-candidate" || r.type === "remote-candidate") {
+          console.log(`[STATS] ${r.type}:`, r);
+        }
+      });
+      console.log(`[STATS] dump end (${label})`);
+    } catch (e) {
+      console.error("[STATS] getStats error:", e);
+    }
+  };
 
   // Initialize socket once
   useEffect(() => {
@@ -48,38 +75,54 @@ const Friends = () => {
     socketRef.current = socket;
 
     socket.on("incomingCall", ({ from, offer }) => {
-      console.log("incomingCall from", from);
+      console.log("[SIGNAL] incomingCall from", from);
       setIncomingCaller(from);
       setIncomingCallOffer(offer);
       setStatus("incoming");
     });
 
     socket.on("callAnswered", async ({ answer }) => {
-      console.log("callAnswered received");
-      if (!pcRef.current) return;
+      console.log("[SIGNAL] callAnswered received");
+      if (!pcRef.current) {
+        console.warn("[SIGNAL] received answer but no pcRef");
+        return;
+      }
       try {
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
         setStatus("in-call");
         setInCall(true);
+        // small delay then dump stats
+        setTimeout(() => dumpStats("after callAnswered"), 1500);
       } catch (err) {
-        console.error("Error setting remote description (callAnswered):", err);
+        console.error("[SIGNAL] Error setting remote description (callAnswered):", err);
       }
     });
 
-    socket.on("iceCandidate", async ({ candidate }) => {
-      if (!pcRef.current || !candidate) return;
+    // Remote ICE candidates incoming from signaling server
+    socket.on("iceCandidate", async ({ candidate, from }) => {
+      console.log("[SIGNAL] received iceCandidate from", from, candidate && candidate.candidate);
+      if (!pcRef.current) {
+        console.warn("[SIGNAL] No pcRef when remote candidate arrives - buffering not implemented");
+        return;
+      }
+      if (!candidate) {
+        console.warn("[SIGNAL] remote candidate is null/empty");
+        return;
+      }
       try {
         await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log("[PC] addIceCandidate OK");
       } catch (err) {
-        console.error("Error adding ICE candidate:", err);
+        console.error("[PC] addIceCandidate ERROR:", err, candidate);
       }
     });
 
     socket.on("callEnded", () => {
-      console.log("callEnded received from remote");
+      console.log("[SIGNAL] callEnded received from remote");
       endCall();
     });
 
+    // cleanup
     return () => {
       try {
         socket.off("incomingCall");
@@ -102,7 +145,7 @@ const Friends = () => {
     // ontrack: handle remote stream(s) — attach only once on video track
     pc.ontrack = (event) => {
       try {
-        console.log("ontrack fired with:", event.track?.kind, "streams:", event.streams);
+        console.log("[PC] ontrack fired with:", event.track?.kind, "streams:", event.streams);
         // prefer event.streams[0] when available
         let remoteStream = (event.streams && event.streams[0]) || null;
 
@@ -118,7 +161,7 @@ const Friends = () => {
         // Only attach when the video track arrives (prevents replacing srcObject on audio track)
         if (event.track && event.track.kind === "video") {
           if (videoEl.srcObject !== remoteStream) {
-            console.log("### attaching remote VIDEO stream");
+            console.log("[PC] ### attaching remote VIDEO stream");
             videoEl.srcObject = remoteStream;
             // ensure element remains mounted (we hide/show it with CSS)
             setInCall(true);
@@ -128,36 +171,53 @@ const Friends = () => {
               setTimeout(() => {
                 // attempt to play; if blocked by autoplay, user must unmute/interact
                 videoEl.play().catch((err) => {
-                  console.warn("video play error (may be autoplay):", err);
+                  console.warn("[PC] video play error (may be autoplay):", err);
                 });
               }, 40);
             });
           }
         } else {
           // If event.track.kind === 'audio' and video already attached this is fine.
-          console.log("audio track arrived");
+          console.log("[PC] audio track arrived");
         }
       } catch (e) {
-        console.error("ontrack handler error:", e);
+        console.error("[PC] ontrack handler error:", e);
       }
     };
 
     // Send ICE candidates to remote through your signaling server
     pc.onicecandidate = (event) => {
+      console.log("[PC] onicecandidate event:", event && event.candidate && event.candidate.candidate);
       if (event.candidate && socketRef.current) {
-        console.log("emitting local ICE candidate");
+        console.log("[PC] emitting local ICE candidate ->", event.candidate.candidate, " to:", targetFriend);
         socketRef.current.emit("iceCandidate", {
           to: targetFriend,
           candidate: event.candidate,
+          from: sessionStorage.getItem("userName"),
         });
+      } else {
+        console.log("[PC] candidate is null (gathering complete)");
       }
     };
 
+    pc.onicecandidateerror = (ev) => {
+      console.error("[PC] onicecandidateerror:", ev);
+    };
+
+    pc.onicegatheringstatechange = () => {
+      console.log("[PC] iceGatheringState:", pc.iceGatheringState);
+    };
+
     pc.onconnectionstatechange = () => {
-      console.log("PC state:", pc.connectionState);
+      console.log("[PC] connectionState:", pc.connectionState);
       if (pc.connectionState === "disconnected" || pc.connectionState === "failed") {
         // consider ending call or restarting ICE
+        console.warn("[PC] connectionState indicates problem:", pc.connectionState);
       }
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      console.log("[PC] iceConnectionState:", pc.iceConnectionState);
     };
 
     return pc;
@@ -165,7 +225,7 @@ const Friends = () => {
 
   // Stop and cleanup local stream + RTCPeerConnection
   const endCall = () => {
-    console.log("Ending call and cleaning up");
+    console.log("[APP] Ending call and cleaning up");
     const prevFriend = friend;
     setFriend(null);
     setIncomingCallOffer(null);
@@ -178,7 +238,7 @@ const Friends = () => {
       try {
         localStreamRef.current.getTracks().forEach((t) => t.stop());
       } catch (e) {
-        console.warn("error stopping local tracks", e);
+        console.warn("[APP] error stopping local tracks", e);
       }
       localStreamRef.current = null;
     }
@@ -200,7 +260,7 @@ const Friends = () => {
       try {
         pcRef.current.close();
       } catch (e) {
-        console.warn("error closing pc", e);
+        console.warn("[APP] error closing pc", e);
       }
       pcRef.current = null;
     }
@@ -232,8 +292,8 @@ const Friends = () => {
         pc.addTrack(track, stream);
       });
 
-      console.log("Local tracks:", stream.getTracks().map((t) => t.kind));
-      console.log("pc senders after addTrack:", pc.getSenders().map((s) => s.track?.kind));
+      console.log("[APP] Local tracks:", stream.getTracks().map((t) => t.kind));
+      console.log("[APP] pc senders after addTrack:", pc.getSenders().map((s) => s.track?.kind));
 
       // create offer AFTER tracks added
       const offer = await pc.createOffer();
@@ -248,7 +308,7 @@ const Friends = () => {
         });
       }
     } catch (err) {
-      console.error("startCall error:", err);
+      console.error("[APP] startCall error:", err);
       endCall();
     }
   };
@@ -270,8 +330,8 @@ const Friends = () => {
       // add tracks BEFORE createAnswer
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
-      console.log("Local tracks (callee):", stream.getTracks().map((t) => t.kind));
-      console.log("pc senders after addTrack (callee):", pc.getSenders().map((s) => s.track?.kind));
+      console.log("[APP] Local tracks (callee):", stream.getTracks().map((t) => t.kind));
+      console.log("[APP] pc senders after addTrack (callee):", pc.getSenders().map((s) => s.track?.kind));
 
       // set remote offer & create answer
       await pc.setRemoteDescription(new RTCSessionDescription(incomingCallOffer));
@@ -287,8 +347,11 @@ const Friends = () => {
       setIncomingCallOffer(null);
       setIncomingCaller(null);
       setInCall(true);
+
+      // dump stats slightly after connecting
+      setTimeout(() => dumpStats("after handleIncomingCall"), 1500);
     } catch (err) {
-      console.error("handleIncomingCall error:", err);
+      console.error("[APP] handleIncomingCall error:", err);
       endCall();
     }
   };
@@ -299,10 +362,10 @@ const Friends = () => {
     try {
       if (remoteVideoRef.current) {
         remoteVideoRef.current.muted = false;
-        remoteVideoRef.current.play().catch((err) => console.log("play after unmute error:", err));
+        remoteVideoRef.current.play().catch((err) => console.log("[APP] play after unmute error:", err));
       }
     } catch (e) {
-      console.warn("unmuteRemote error:", e);
+      console.warn("[APP] unmuteRemote error:", e);
     }
   };
 
