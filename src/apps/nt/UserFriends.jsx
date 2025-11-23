@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import io from "socket.io-client";
 
-const Friends = () => {
+const UserFriends = () => {
   const dispatch = useDispatch();
   const socketRef = useRef(null);
   const pcRef = useRef(null);
@@ -20,49 +20,22 @@ const Friends = () => {
   const [remoteMuted, setRemoteMuted] = useState(true);
   const [inCall, setInCall] = useState(false);
 
-  // NOTE: put a TURN server here for production if you have one
+  // TURN config: TCP-only to ensure connection even on UDP-blocked networks
   const servers = {
-    // keep relay if you want forced TURN; remove/adjust if you want STUN+TURN fallback
     iceTransportPolicy: "relay",
     iceServers: [
       {
         urls: [
-          // UDP fallbacks (common), then TCP and TLS
-          "turn:global.relay.metered.ca:3478?transport=udp",
-          "turn:global.relay.metered.ca:80?transport=udp",
           "turn:global.relay.metered.ca:443?transport=tcp",
-          "turns:global.relay.metered.ca:443?transport=tcp" // TLS fallback
+          "turns:global.relay.metered.ca:443?transport=tcp"
         ],
         username: "44c31ceccfa165e958e6d7b0",
-        credential: "u+cYRNuJyt6Vvdc3",
+        credential: "u+cYRNuJyt6Vvdc3"
       }
-    ],
+    ]
   };
 
-  // ---------- Helper: dump getStats ----------
-  const dumpStats = async (label = "") => {
-    if (!pcRef.current) {
-      console.log("[STATS] no pc to dump stats for", label);
-      return;
-    }
-    try {
-      const stats = await pcRef.current.getStats();
-      console.log(`[STATS] dump start (${label})`);
-      stats.forEach((r) => {
-        if (r.type === "candidate-pair" && r.state === "succeeded") {
-          console.log("[STATS] succeeded candidate-pair:", r);
-        }
-        if (r.type === "local-candidate" || r.type === "remote-candidate") {
-          console.log(`[STATS] ${r.type}:`, r);
-        }
-      });
-      console.log(`[STATS] dump end (${label})`);
-    } catch (e) {
-      console.error("[STATS] getStats error:", e);
-    }
-  };
-
-  // Initialize socket once
+  // Initialize socket
   useEffect(() => {
     const token = sessionStorage.getItem("jwtToken");
     if (!token) return;
@@ -83,37 +56,26 @@ const Friends = () => {
 
     socket.on("callAnswered", async ({ answer }) => {
       console.log("[SIGNAL] callAnswered received");
-      if (!pcRef.current) {
-        console.warn("[SIGNAL] received answer but no pcRef");
-        return;
-      }
+      if (!pcRef.current) return;
       try {
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
         setStatus("in-call");
         setInCall(true);
-        // small delay then dump stats
-        setTimeout(() => dumpStats("after callAnswered"), 1500);
+
+        // Dump ICE stats for debugging
+        dumpStats();
       } catch (err) {
-        console.error("[SIGNAL] Error setting remote description (callAnswered):", err);
+        console.error("Error setting remote description (callAnswered):", err);
       }
     });
 
-    // Remote ICE candidates incoming from signaling server
-    socket.on("iceCandidate", async ({ candidate, from }) => {
-      console.log("[SIGNAL] received iceCandidate from", from, candidate && candidate.candidate);
-      if (!pcRef.current) {
-        console.warn("[SIGNAL] No pcRef when remote candidate arrives - buffering not implemented");
-        return;
-      }
-      if (!candidate) {
-        console.warn("[SIGNAL] remote candidate is null/empty");
-        return;
-      }
+    socket.on("iceCandidate", async ({ candidate }) => {
+      if (!pcRef.current || !candidate) return;
       try {
         await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
         console.log("[PC] addIceCandidate OK");
       } catch (err) {
-        console.error("[PC] addIceCandidate ERROR:", err, candidate);
+        console.error("Error adding ICE candidate:", err);
       }
     });
 
@@ -122,7 +84,6 @@ const Friends = () => {
       endCall();
     });
 
-    // cleanup
     return () => {
       try {
         socket.off("incomingCall");
@@ -135,97 +96,78 @@ const Friends = () => {
     };
   }, []);
 
-  // Create and wire up a new RTCPeerConnection
+  // Create peer connection
   const createPeerConnection = (targetFriend) => {
     if (pcRef.current) return pcRef.current;
 
     const pc = new RTCPeerConnection(servers);
     pcRef.current = pc;
 
-    // ontrack: handle remote stream(s) — attach only once on video track
     pc.ontrack = (event) => {
-      try {
-        console.log("[PC] ontrack fired with:", event.track?.kind, "streams:", event.streams);
-        // prefer event.streams[0] when available
-        let remoteStream = (event.streams && event.streams[0]) || null;
+      console.log("[PC] ontrack fired with:", event.track?.kind, "streams:", event.streams);
+      let remoteStream = (event.streams && event.streams[0]) || null;
 
-        // if streams empty, construct from track
-        if (!remoteStream) {
-          remoteStream = new MediaStream();
-          if (event.track) remoteStream.addTrack(event.track);
+      if (!remoteStream) {
+        remoteStream = new MediaStream();
+        if (event.track) remoteStream.addTrack(event.track);
+      }
+
+      const videoEl = remoteVideoRef.current;
+      if (!videoEl) return;
+
+      if (event.track && event.track.kind === "video") {
+        if (videoEl.srcObject !== remoteStream) {
+          console.log("[PC] ### attaching remote VIDEO stream");
+          videoEl.srcObject = remoteStream;
+          setInCall(true);
+
+          requestAnimationFrame(() => {
+            setTimeout(() => {
+              videoEl.play().catch((err) => {
+                console.warn("video play error (may be autoplay):", err);
+              });
+            }, 40);
+          });
         }
-
-        const videoEl = remoteVideoRef.current;
-        if (!videoEl) return;
-
-        // Only attach when the video track arrives (prevents replacing srcObject on audio track)
-        if (event.track && event.track.kind === "video") {
-          if (videoEl.srcObject !== remoteStream) {
-            console.log("[PC] ### attaching remote VIDEO stream");
-            videoEl.srcObject = remoteStream;
-            // ensure element remains mounted (we hide/show it with CSS)
-            setInCall(true);
-
-            // use rAF + small timeout to avoid race/play interruption
-            requestAnimationFrame(() => {
-              setTimeout(() => {
-                // attempt to play; if blocked by autoplay, user must unmute/interact
-                videoEl.play().catch((err) => {
-                  console.warn("[PC] video play error (may be autoplay):", err);
-                });
-              }, 40);
-            });
-          }
-        } else {
-          // If event.track.kind === 'audio' and video already attached this is fine.
-          console.log("[PC] audio track arrived");
-        }
-      } catch (e) {
-        console.error("[PC] ontrack handler error:", e);
+      } else {
+        console.log("[PC] audio track arrived");
       }
     };
 
-    // Send ICE candidates to remote through your signaling server
     pc.onicecandidate = (event) => {
-      console.log("[PC] onicecandidate event:", event && event.candidate && event.candidate.candidate);
       if (event.candidate && socketRef.current) {
-        console.log("[PC] emitting local ICE candidate ->", event.candidate.candidate, " to:", targetFriend);
+        console.log("[PC] emitting local ICE candidate");
         socketRef.current.emit("iceCandidate", {
           to: targetFriend,
           candidate: event.candidate,
-          from: sessionStorage.getItem("userName"),
         });
-      } else {
-        console.log("[PC] candidate is null (gathering complete)");
       }
     };
 
-    pc.onicecandidateerror = (ev) => {
-      console.error("[PC] onicecandidateerror:", ev);
+    pc.oniceconnectionstatechange = () => {
+      console.log("[PC] iceConnectionState:", pc.iceConnectionState);
+      if (pc.iceConnectionState === "failed" || pc.iceConnectionState === "disconnected") {
+        console.warn("[PC] connection failed/disconnected");
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      console.log("[PC] connectionState:", pc.connectionState);
+    };
+
+    pc.onicecandidateerror = (err) => {
+      console.error("[PC] onicecandidateerror:", err);
     };
 
     pc.onicegatheringstatechange = () => {
       console.log("[PC] iceGatheringState:", pc.iceGatheringState);
     };
 
-    pc.onconnectionstatechange = () => {
-      console.log("[PC] connectionState:", pc.connectionState);
-      if (pc.connectionState === "disconnected" || pc.connectionState === "failed") {
-        // consider ending call or restarting ICE
-        console.warn("[PC] connectionState indicates problem:", pc.connectionState);
-      }
-    };
-
-    pc.oniceconnectionstatechange = () => {
-      console.log("[PC] iceConnectionState:", pc.iceConnectionState);
-    };
-
     return pc;
   };
 
-  // Stop and cleanup local stream + RTCPeerConnection
   const endCall = () => {
-    console.log("[APP] Ending call and cleaning up");
+    console.log("[PC] Ending call and cleaning up");
     const prevFriend = friend;
     setFriend(null);
     setIncomingCallOffer(null);
@@ -233,47 +175,23 @@ const Friends = () => {
     setStatus("idle");
     setInCall(false);
 
-    // stop local tracks
     if (localStreamRef.current) {
-      try {
-        localStreamRef.current.getTracks().forEach((t) => t.stop());
-      } catch (e) {
-        console.warn("[APP] error stopping local tracks", e);
-      }
+      localStreamRef.current.getTracks().forEach(t => t.stop());
       localStreamRef.current = null;
     }
-    if (localVideoRef.current) {
-      try {
-        localVideoRef.current.srcObject = null;
-      } catch (e) {}
-    }
+    if (localVideoRef.current) localVideoRef.current.srcObject = null;
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
 
-    // stop remote video
-    if (remoteVideoRef.current) {
-      try {
-        remoteVideoRef.current.srcObject = null;
-      } catch (e) {}
-    }
-
-    // close pc
     if (pcRef.current) {
-      try {
-        pcRef.current.close();
-      } catch (e) {
-        console.warn("[APP] error closing pc", e);
-      }
+      pcRef.current.close();
       pcRef.current = null;
     }
 
-    // Tell remote we ended (optional depending on your server)
     if (socketRef.current && prevFriend) {
-      try {
-        socketRef.current.emit("callEnded", { to: prevFriend });
-      } catch (e) {}
+      socketRef.current.emit("callEnded", { to: prevFriend });
     }
   };
 
-  // Caller: start a call to friend
   const startCall = async (toFriend) => {
     setFriend(toFriend);
     setStatus("calling");
@@ -281,25 +199,15 @@ const Friends = () => {
     try {
       const pc = createPeerConnection(toFriend);
 
-      // IMPORTANT: getUserMedia BEFORE creating offer so tracks are present in offer
-      const constraints = { video: { facingMode: "user" }, audio: true };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localStreamRef.current = stream;
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
-      // add tracks to pc BEFORE createOffer
-      stream.getTracks().forEach((track) => {
-        pc.addTrack(track, stream);
-      });
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
-      console.log("[APP] Local tracks:", stream.getTracks().map((t) => t.kind));
-      console.log("[APP] pc senders after addTrack:", pc.getSenders().map((s) => s.track?.kind));
-
-      // create offer AFTER tracks added
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      // send to signaling server
       if (socketRef.current) {
         socketRef.current.emit("callUser", {
           to: toFriend,
@@ -308,12 +216,11 @@ const Friends = () => {
         });
       }
     } catch (err) {
-      console.error("[APP] startCall error:", err);
+      console.error("[PC] startCall error:", err);
       endCall();
     }
   };
 
-  // Callee: accept incoming call
   const handleIncomingCall = async () => {
     if (!incomingCallOffer || !incomingCaller) return;
     setFriend(incomingCaller);
@@ -321,24 +228,16 @@ const Friends = () => {
     try {
       const pc = createPeerConnection(incomingCaller);
 
-      // IMPORTANT: getUserMedia BEFORE setRemoteDescription/createAnswer
-      const constraints = { video: { facingMode: "user" }, audio: true };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localStreamRef.current = stream;
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
-      // add tracks BEFORE createAnswer
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
-      console.log("[APP] Local tracks (callee):", stream.getTracks().map((t) => t.kind));
-      console.log("[APP] pc senders after addTrack (callee):", pc.getSenders().map((s) => s.track?.kind));
-
-      // set remote offer & create answer
       await pc.setRemoteDescription(new RTCSessionDescription(incomingCallOffer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
-      // send answer
       if (socketRef.current) {
         socketRef.current.emit("answerCall", { to: incomingCaller, answer });
       }
@@ -347,42 +246,24 @@ const Friends = () => {
       setIncomingCallOffer(null);
       setIncomingCaller(null);
       setInCall(true);
-
-      // dump stats slightly after connecting
-      setTimeout(() => dumpStats("after handleIncomingCall"), 1500);
     } catch (err) {
-      console.error("[APP] handleIncomingCall error:", err);
+      console.error("[PC] handleIncomingCall error:", err);
       endCall();
     }
   };
 
-  // Unmute remote audio (user gesture required for many browsers)
   const unmuteRemote = () => {
     setRemoteMuted(false);
-    try {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.muted = false;
-        remoteVideoRef.current.play().catch((err) => console.log("[APP] play after unmute error:", err));
-      }
-    } catch (e) {
-      console.warn("[APP] unmuteRemote error:", e);
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.muted = false;
+      remoteVideoRef.current.play().catch(err => console.warn("play after unmute error:", err));
     }
   };
 
-  // Small helper to render buttons per state
   const renderControls = () => {
     if (status === "idle") {
-      return (
-        <div>
-          {friends.map((f) => (
-            <button key={f} onClick={() => startCall(f)}>
-              Call {f}
-            </button>
-          ))}
-        </div>
-      );
+      return <div>{friends.map(f => <button key={f} onClick={() => startCall(f)}>Call {f}</button>)}</div>;
     }
-
     if (status === "calling") {
       return (
         <div>
@@ -391,49 +272,43 @@ const Friends = () => {
         </div>
       );
     }
-
     if (status === "incoming") {
       return (
         <div>
           <p>{incomingCaller} is calling...</p>
           <button onClick={handleIncomingCall}>Accept</button>
-          <button
-            onClick={() => {
-              // optionally notify server about rejection
-              setIncomingCallOffer(null);
-              setIncomingCaller(null);
-              setStatus("idle");
-            }}
-          >
-            Decline
-          </button>
+          <button onClick={() => { setIncomingCaller(null); setIncomingCallOffer(null); setStatus("idle"); }}>Decline</button>
         </div>
       );
     }
-
     if (status === "in-call") {
       return (
         <div>
           <p>In call with {friend}</p>
           <button onClick={endCall}>End Call</button>
-          {remoteMuted && (
-            <button onClick={unmuteRemote} style={{ marginLeft: 8 }}>
-              Unmute Remote Audio
-            </button>
-          )}
+          {remoteMuted && <button onClick={unmuteRemote} style={{ marginLeft: 8 }}>Unmute Remote Audio</button>}
         </div>
       );
     }
-
     return null;
   };
 
-  const localVideoStyle = {
-    width: "200px",
-    height: "140px",
-    borderRadius: "8px",
-    objectFit: "cover",
-    background: "black",
+  const localVideoStyle = { width: 200, height: 140, borderRadius: 8, objectFit: "cover", background: "black" };
+
+  const dumpStats = async () => {
+    if (!pcRef.current) return;
+    try {
+      console.log("[STATS] dump start");
+      const stats = await pcRef.current.getStats();
+      stats.forEach(report => {
+        if (report.type.includes("candidate")) {
+          console.log("[STATS] candidate:", report);
+        }
+      });
+      console.log("[STATS] dump end");
+    } catch (err) {
+      console.warn("[STATS] dump error:", err);
+    }
   };
 
   return (
@@ -450,18 +325,15 @@ const Friends = () => {
       <hr />
 
       <h2>Remote</h2>
-      <div style={{ width: "640px", height: "360px", background: "#000" }}>
-        {/* Remote video is always mounted (do NOT conditionally mount) — we hide it via CSS.
-            It's muted initially (remoteMuted) to improve autoplay reliability. */}
+      <div style={{ width: 640, height: 360, background: "#000" }}>
         <video
           ref={remoteVideoRef}
           autoPlay
           playsInline
           muted={remoteMuted}
-          // show/hide visually instead of unmounting to avoid play() interruption
           style={{
-            width: "640px",
-            height: "360px",
+            width: 640,
+            height: 360,
             background: "black",
             objectFit: "cover",
             zIndex: 10,
@@ -474,4 +346,4 @@ const Friends = () => {
   );
 };
 
-export default Friends;
+export default UserFriends;
