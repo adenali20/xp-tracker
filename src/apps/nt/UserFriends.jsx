@@ -22,16 +22,16 @@ const UserFriends = () => {
 
   // TURN config: TCP-only to ensure connection even on UDP-blocked networks
   const servers = {
-    iceTransportPolicy: "all", // allow both P2P and relay
+    // iceTransportPolicy: "all", // allow both P2P and relay
     iceServers: [
       {
         urls: "stun:stun.l.google.com:19302" // public STUN server
       },
-      {
-        urls: "turn:138.68.247.139:3478",
-        username: "turnuser",
-        credential: "turnpassword",
-      }
+      // {
+      //   urls: "turn:138.68.247.139:3478",
+      //   username: "turnuser",
+      //   credential: "turnpassword",
+      // }
     ]
   };
 
