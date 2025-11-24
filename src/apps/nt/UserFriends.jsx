@@ -25,12 +25,9 @@ const UserFriends = () => {
     iceTransportPolicy: "relay",
     iceServers: [
       {
-        urls: [
-          "turn:global.relay.metered.ca:443?transport=tcp",
-          "turns:global.relay.metered.ca:443?transport=tcp"
-        ],
-        username: "44c31ceccfa165e958e6d7b0",
-        credential: "u+cYRNuJyt6Vvdc3"
+        urls: "turn:138.68.247.139:3478",
+        username: "turnuser",
+        credential: "turnpassword",
       }
     ]
   };
