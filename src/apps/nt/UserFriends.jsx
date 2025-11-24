@@ -19,6 +19,7 @@ const UserFriends = () => {
   const [incomingCaller, setIncomingCaller] = useState(null);
   const [remoteMuted, setRemoteMuted] = useState(true);
   const [inCall, setInCall] = useState(false);
+  const iceCandidatesRef = useRef([]);
 
   // TURN config: TCP-only to ensure connection even on UDP-blocked networks
   const servers = {
@@ -35,6 +36,16 @@ const UserFriends = () => {
     ]
   };
 
+    const addIceCandidates = async () => {
+      if (!pcRef.current) return;
+      for (const candidate of iceCandidatesRef.current) {
+        try {
+          await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+          console.error("Error adding ICE candidate from buffer:", err);
+        }
+      }
+    };
 
   // Initialize socket
   useEffect(() => {
@@ -70,7 +81,12 @@ const UserFriends = () => {
       }
     });
 
+  
+
     socket.on("iceCandidate", async ({ candidate }) => {
+      // console.log("CANDDATE RECEIVED -->",candidate);
+      iceCandidatesRef.current.push(candidate);
+      
       if (!pcRef.current || !candidate) return;
       try {
         await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
@@ -226,6 +242,9 @@ const UserFriends = () => {
     if (!incomingCallOffer || !incomingCaller) return;
     setFriend(incomingCaller);
 
+    console.log(iceCandidatesRef.current);
+    
+
     try {
       const pc = createPeerConnection(incomingCaller);
 
@@ -247,6 +266,7 @@ const UserFriends = () => {
       setIncomingCallOffer(null);
       setIncomingCaller(null);
       setInCall(true);
+      addIceCandidates();
     } catch (err) {
       console.error("[PC] handleIncomingCall error:", err);
       endCall();
