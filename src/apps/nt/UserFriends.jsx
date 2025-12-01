@@ -28,11 +28,11 @@ const UserFriends = () => {
       {
         urls: "stun:stun.l.google.com:19302" // public STUN server
       },
-      // {
-      //   urls: "turn:138.68.247.139:3478",
-      //   username: "turnuser",
-      //   credential: "turnpassword",
-      // }
+      {
+        urls: "turn:138.68.247.139:3478",
+        username: "turnuser",
+        credential: "turnpassword",
+      }
     ]
   };
 
