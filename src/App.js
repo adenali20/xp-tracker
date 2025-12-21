@@ -16,7 +16,7 @@ import NtLayout from "./apps/nt/Layout";
 // import XtNavbar from "./apps/xt/XtNavbar";
 import NtLogin from "./apps/nt/Login";
 import NtSignup from "./apps/nt/SignupPage";
-import NtFriends from "./apps/nt/UserFriends";
+import NtFriends from "./apps/nt/FileUploadComponent";
 // import XtProfile from "./apps/xt/Profile";
 
 const App = () => {
