@@ -17,7 +17,7 @@ const FileUploadComponent = () => {
   const getPresignedUrl = async () => {
     const token = window.sessionStorage.getItem("jwtToken");
     const response = await axios.post(
-      "http://localhost:8050/api/expensesrv/generate-presigned-url",
+      "http://dev.adenali.com:8050/api/expensesrv/generate-presigned-url",
       null,
       {
         params: {
