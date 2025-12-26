@@ -17,7 +17,7 @@ const FileUploadComponent = () => {
   const getPresignedUrl = async () => {
     const token = window.sessionStorage.getItem("jwtToken");
     const response = await axios.post(
-      "http://dev.adenali.com:8050/api/expensesrv/generate-presigned-url",
+      "http://localhost:8050/api/expensesrv/generate-presigned-url",
       null,
       {
         params: {
@@ -44,10 +44,10 @@ const FileUploadComponent = () => {
       const { url, objectKey } = await getPresignedUrl();
 
       // Direct PUT to S3
-      await fetch(url, {
-        method: "PUT",
-        body: selectedFile, // raw file, no headers needed
-      });
+    //   await fetch(url, {
+    //     method: "PUT",
+    //     body: selectedFile, // raw file, no headers needed
+    //   });
 
       setMessage(`Upload successful (fetch)! S3 Key: ${objectKey}`);
     } catch (err) {
@@ -68,12 +68,12 @@ const FileUploadComponent = () => {
     try {
       const { url, objectKey } = await getPresignedUrl();
 
-      await axios.put(url, selectedFile, {
-        headers: {
-          // Optional: explicitly set content-type
-          "Content-Type": selectedFile.type || "application/octet-stream",
-        },
-      });
+    //   await axios.put(url, selectedFile, {
+    //     headers: {
+    //       // Optional: explicitly set content-type
+    //       "Content-Type": selectedFile.type || "application/octet-stream",
+    //     },
+    //   });
 
       setMessage(`Upload successful (axios)! S3 Key: ${objectKey}`);
     } catch (err) {
