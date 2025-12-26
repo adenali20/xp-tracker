@@ -1,29 +1,55 @@
-import { BrowserRouter as Router, Routes, Route} from 'react-router-dom';
-import Login from './components/Login';
-import Home from './components/Home';
-import Profile from './components/Profile';
-import PrivateRoute from './routes/PrivateRoute';
-import SignupPage from './components/SignupPage';
-import Layout from './components/Layout'; // Import the layout
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+// import SoftwareEngineerProfile from "./apps/aden/SoftwareEngineerProfile";
+import XtPrivateRoute from "./routes/XtPrivateRoute";
+import NtPrivateRoute from "./routes/NtPrivateRoute";
+// XP Tracker
+import XtLayout from "./apps/xt/Layout";
+// import XtNavbar from "./apps/xt/XtNavbar";
+import XtLogin from "./apps/xt/Login";
+import XtSignup from "./apps/xt/SignupPage";
+import Home from "./apps/xt/Home";
+import XtProfile from "./apps/xt/Profile";
+
+// Chat
+// XP Tracker
+import NtLayout from "./apps/nt/Layout";
+// import XtNavbar from "./apps/xt/XtNavbar";
+import NtLogin from "./apps/nt/Login";
+import NtSignup from "./apps/nt/SignupPage";
+import NtFriends from "./apps/nt/FileUploadComponent";
+// import XtProfile from "./apps/xt/Profile";
 
 const App = () => {
   return (
     <Router>
       <Routes>
-        {/* Public route */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<SignupPage />} />
+        {/* Public root routes */}
+        {/* <Route path="/" element={<SoftwareEngineerProfile />} /> */}
 
-        {/* Private routes */}
-        <Route element={<PrivateRoute />}>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/profile" element={<Profile />} />
+        {/* --- XP TRACKER --- */}
+        <Route path="/xt/login" element={<XtLogin />} />
+        <Route path="/xt/register" element={<XtSignup />} />
 
+        <Route element={<XtPrivateRoute app="xt" />}>
+          <Route path="/xt" element={<XtLayout />}>
+            <Route index element={<Home />} />
+            <Route path="/xt/profile" element={<XtProfile />} />
           </Route>
         </Route>
-        {/* Catch-all: redirect unknown routes to login */}
-        {/* <Route path="*" element={<Navigate to="/" />} /> */}
+
+        {/* --- CHAT --- */}
+        <Route path="/nt/login" element={<NtLogin />} />
+        <Route path="/nt/register" element={<NtSignup />} />
+        {/* <Route path="/nt/friends" element={<NtFriends />} /> */}
+
+        <Route element={<NtPrivateRoute app="chat" />}>
+          <Route path="/nt" element={<NtLayout />}>
+            <Route index element={<NtFriends />} />
+          </Route>
+          <Route path="/" element={<NtLayout />}>
+            <Route index element={<NtFriends />} />
+          </Route>
+        </Route>
       </Routes>
     </Router>
   );

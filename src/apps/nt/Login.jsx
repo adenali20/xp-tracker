@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import axios from '../api/axios';
+import axios from '../../api/axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { loginStart, loginSuccess, loginFailure } from '../redux/reducers/userSlice';
+import { loginStart, loginSuccess, loginFailure } from '../../redux/reducers/userSlice';
 import './Login.css'; // Import the CSS
+// import {encode} from 'base-64';
 
 const Login = () => {
   const [credentials, setCredentials] = useState({ username: '', password: '' });
@@ -15,31 +16,34 @@ const Login = () => {
     setCredentials({ ...credentials, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    dispatch(loginStart());
 
-    try {
-       await axios.post(
-        '/api/auth/login',
-        new URLSearchParams({
-          username: credentials.username,
-          password: credentials.password,
-        }),
-        {
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          withCredentials: true,
-        }
-      );
 
-      const userDetails = { username: credentials.username };
-      dispatch(loginSuccess(userDetails));
-      navigate('/');
-    } catch (error) {
-      dispatch(loginFailure(error.response?.data?.message || 'Login failed'));
-      console.log('Login failed', error);
-    }
-  };
+const handleSubmit = async (e) => {
+
+ e.preventDefault();
+  dispatch(loginStart());
+
+  try {
+    const response = await axios.post(
+      "/user/login",
+      { username: credentials.username, password: credentials.password },
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    const { jwtToken } = response.data;
+    console.log(jwtToken);
+
+    window.sessionStorage.setItem("jwtToken", jwtToken);
+    window.sessionStorage.setItem("userName", credentials.username);
+
+    dispatch(loginSuccess({ username: credentials.username, jwtToken }));
+    navigate("/nt");
+  } catch (error) {
+    console.error("Login failed:", error);
+    dispatch(loginFailure(error.response?.data?.message || "Login failed"));
+  }
+};
+
 
   return (
     <div className="login-wrapper">
@@ -72,7 +76,7 @@ const Login = () => {
         {error && <p className="error">{error}</p>}
 
         <p className="signup-text">
-          Don’t have an account? <Link to="/register">Create one</Link>
+          Don’t have an account? <Link to="/nt/register">Create one</Link>
         </p>
       </form>
     </div>

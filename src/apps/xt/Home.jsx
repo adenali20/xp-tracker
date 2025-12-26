@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import axios from "../api/axios";
+import axios from "../../api/axios";
 import "./Home.css";
 
 const Home = () => {
@@ -79,7 +79,7 @@ const Home = () => {
   return (
     <div className="home-container">
       <h1>Welcome, {userDetails?.username || "User"} 👋</h1>
-      <p className="subtitle">Here’s a quick look at your expenses.</p>
+      <p className="subtitle">Here’s a quick review at your expenses.</p>
 
       <div className="dashboard-cards">
         <div className="card total-card">
@@ -95,9 +95,9 @@ const Home = () => {
       </div>
 
       <div className="recent-header">
-        <h2>Recent Entries</h2>
+        <h2>History</h2>
         <button className="btn link-btn" onClick={() => setShowAllModal(true)}>
-          View All →
+          View All
         </button>
       </div>
 
@@ -120,7 +120,7 @@ const Home = () => {
 
       <div className="actions">
         <button onClick={() => setShowAddModal(true)} className="btn primary">
-          + Add New Expense
+          Add New Expense
         </button>
       </div>
 

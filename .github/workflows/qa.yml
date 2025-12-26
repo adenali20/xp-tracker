@@ -1,0 +1,54 @@
+name: CI - QA
+
+on:
+  push:
+    branches: [ "qa" ]
+  pull_request:
+    branches: [ "qa" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the code
+      - uses: actions/checkout@v3
+
+      # Setup Node.js
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20.16.0
+
+      # Configure Git (optional)
+      - name: Setup git config
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+
+      # Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # Build the project
+      - name: Build
+        run: npm run build
+
+      # Get the commit SHA for versioning
+      - name: Get commit SHA
+        id: vars
+        run: echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      # Login to Docker Hub
+      - name: Login to DockerHub
+        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+      # Build the Docker image
+      - name: Build Docker image
+        run: docker build . --file Dockerfile --tag adenli/xp-tracker:sha-${SHA}
+
+      # Tag and push Docker image for QA
+      - name: Tag and push QA image
+        run: |
+          docker tag adenli/xp-tracker:sha-${SHA} adenli/xp-tracker:qa-${SHA}
+          docker push adenli/xp-tracker:sha-${SHA}
+          docker push adenli/xp-tracker:qa-${SHA}

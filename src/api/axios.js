@@ -4,13 +4,13 @@ const origin = window.location.origin; // e.g. "http://localhost:3000" or "https
 const url = new URL(origin);
 
 // Check if it's localhost
-const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '10.0.0.167';
 
 // For localhost, replace the port with 8050.
 // For deployed (non-local) environments, just use the same origin.
 const base = isLocalhost
-  ? `${url.protocol}//${url.hostname}:8050/api/expensesrv`
-  : `${url.protocol}//${url.hostname}/api/expensesrv`;
+  ? `http://localhost:8050/api/authservice`
+  : `http://localhost:8050/api/authservice`;
 
 const axiosInstance = axios.create({
   baseURL: base,

@@ -1,0 +1,60 @@
+.friends-list-container {
+  width: 250px;
+  border-right: 1px solid #ccc;
+  padding: 10px;
+  overflow-y: auto;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+.friends-search {
+  width: 100%;
+  padding: 5px;
+  margin-bottom: 10px;
+}
+
+.friends-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.friend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.friend-item:hover {
+  background-color: #f0f0f0;
+}
+
+.friend-item.selected {
+  background-color: #e0e0ff;
+}
+
+.status-dot {
+  display: flex;
+  align-items: center;
+}
+
+.status-dot.online circle {
+  fill: green;
+}
+
+.status-dot.offline circle {
+  fill: gray;
+}
+
+.friend-name {
+  font-weight: 500;
+}
+
+.last-seen {
+  font-size: 0.75rem;
+  color: #888;
+}
